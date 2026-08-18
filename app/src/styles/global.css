@@ -1,0 +1,54 @@
+/**
+ * Global reset only.
+ *
+ * Each page owns its own stylesheet and scopes every rule under a page class
+ * (.page-home, .page-leaders, ...) because the original pages deliberately use
+ * different palettes and type — the landing page is Fraunces + #FDF6ED sand,
+ * the Student Leaders page is Georgia + #FAF3EC cream. Scoping keeps them from
+ * bleeding into each other now that they share one document.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light only;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Icons sitting inline with text should ride the text baseline instead. */
+.icon-inline {
+  display: inline-block;
+  vertical-align: -0.15em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

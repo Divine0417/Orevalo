@@ -1,0 +1,303 @@
+/**
+ * Student research form — ported from orevalo-research-form.html.
+ * Palette here is the #FAF3EC / #C4622D / #2C1A0E brand set with
+ * Plus Jakarta Sans body copy and Fraunces section headings.
+ */
+
+.page-research {
+  --sand: #faf3ec;
+  --warm: #f5ecd9;
+  --clay: #c4622d;
+  --clay-lt: #e8845a;
+  --ink: #2c1a0e;
+  --muted: #6b5b4e;
+  --white: #ffffff;
+  --green: #2e7d5e;
+  --green-lt: #eaf4ef;
+
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--sand) !important;
+  color: var(--ink) !important;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.page-research .container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* HEADER */
+.page-research .header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.page-research .logo {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #2c1a0e !important;
+}
+
+.page-research .logo span {
+  color: #c4622d !important;
+}
+
+.page-research .header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+  color: #2c1a0e !important;
+}
+
+.page-research .header p {
+  font-size: 0.95rem;
+  color: #6b5b4e !important;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.page-research .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green-lt);
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+
+/* CARDS */
+.page-research .form-card {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 40px 36px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(196, 98, 45, 0.1);
+}
+
+.page-research .section-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--clay);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(196, 98, 45, 0.15);
+}
+
+.page-research .form-group {
+  margin-bottom: 24px;
+}
+
+.page-research label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.page-research label .required {
+  color: var(--clay);
+  margin-left: 2px;
+}
+
+.page-research .sublabel {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 400;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.page-research input[type='text'],
+.page-research input[type='email'],
+.page-research input[type='number'],
+.page-research select,
+.page-research textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(196, 98, 45, 0.2);
+  border-radius: 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--sand);
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.page-research input:focus,
+.page-research select:focus,
+.page-research textarea:focus {
+  border-color: var(--clay);
+  background: var(--white);
+}
+
+.page-research textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+/* CHOICES */
+.page-research .radio-group,
+.page-research .checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-research .radio-option,
+.page-research .checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(196, 98, 45, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--sand);
+}
+
+.page-research .radio-option:hover,
+.page-research .checkbox-option:hover {
+  border-color: var(--clay);
+  background: rgba(196, 98, 45, 0.04);
+}
+
+.page-research .radio-option input,
+.page-research .checkbox-option input {
+  accent-color: var(--clay);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.page-research .radio-option label,
+.page-research .checkbox-option label {
+  margin: 0;
+  font-weight: 400;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-research .option-icon {
+  color: var(--clay);
+  font-size: 1.05rem;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* 1–10 SCALE */
+.page-research .scale-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-research .scale-option {
+  flex: 1;
+  min-width: 44px;
+}
+
+.page-research .scale-option input {
+  display: none;
+}
+
+.page-research .scale-option label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  border: 1.5px solid rgba(196, 98, 45, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  background: var(--sand);
+  margin: 0;
+}
+
+.page-research .scale-option input:checked + label {
+  background: var(--clay);
+  color: white;
+  border-color: var(--clay);
+}
+
+.page-research .scale-option label:hover {
+  border-color: var(--clay);
+}
+
+.page-research .scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.page-research .scale-labels span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* SUBMIT */
+.page-research .submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--clay);
+  color: white;
+  border: none;
+  border-radius: 100px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.page-research .submit-btn:hover {
+  background: var(--clay-lt);
+  transform: translateY(-2px);
+}
+
+.page-research .footer-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 24px;
+  line-height: 1.6;
+}
+
+.page-research .footer-note strong {
+  color: var(--clay);
+}
+
+@media (max-width: 500px) {
+  .page-research .form-card {
+    padding: 28px 20px;
+  }
+}

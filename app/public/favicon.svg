@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#2C1A0E"/>
+  <!-- Stem -->
+  <line x1="50" y1="55" x2="50" y2="82" stroke="#FAF3EC" stroke-width="4" stroke-linecap="round"/>
+  <!-- Left leaf -->
+  <path d="M 50 55 C 34 45 22 30 24 18 C 26 10 36 8 44 14 C 50 19 51 38 50 55 Z" fill="#C4622D"/>
+  <!-- Right leaf -->
+  <path d="M 50 42 C 66 28 80 20 88 22 C 96 26 94 38 84 44 C 74 50 56 46 50 42 Z" fill="#C4622D" opacity="0.85"/>
+  <!-- Ground line -->
+  <line x1="34" y1="83" x2="66" y2="83" stroke="#FAF3EC" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+</svg>

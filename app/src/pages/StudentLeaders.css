@@ -1,0 +1,355 @@
+/**
+ * Founding Student Leaders page — ported from student-leaders.html.
+ * This page keeps its own look on purpose: Georgia headings and the
+ * #FAF3EC / #C4622D / #2C1A0E palette, distinct from the landing page.
+ * The !important flags are carried over — they exist to stop mobile browsers'
+ * auto dark mode from repainting the form.
+ */
+
+.page-leaders {
+  background-color: #faf3ec !important;
+  color: #2c1a0e !important;
+  font-family: 'Georgia', serif;
+  min-height: 100vh;
+}
+
+/* NAV */
+.page-leaders nav {
+  background-color: #faf3ec !important;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8ddd3;
+}
+
+.page-leaders .nav-logo {
+  font-family: 'Georgia', serif;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #c4622d !important;
+  text-decoration: none;
+}
+
+.page-leaders .nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: Arial, sans-serif;
+  font-size: 0.85rem;
+  color: #2c1a0e !important;
+  text-decoration: none;
+  opacity: 0.6;
+}
+
+.page-leaders .nav-back:hover {
+  opacity: 1;
+}
+
+/* HERO */
+.page-leaders .hero {
+  background-color: #2c1a0e !important;
+  color: #faf3ec !important;
+  padding: 56px 24px 48px;
+  text-align: center;
+}
+
+.page-leaders .hero-eyebrow {
+  display: inline-block;
+  background-color: #c4622d !important;
+  color: #faf3ec !important;
+  font-family: Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+.page-leaders .hero h1 {
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  color: #faf3ec !important;
+  line-height: 1.2;
+  max-width: 640px;
+  margin: 0 auto 16px;
+}
+
+.page-leaders .hero h1 span {
+  color: #c4622d !important;
+}
+
+.page-leaders .hero p {
+  font-family: Arial, sans-serif;
+  font-size: 1rem;
+  color: #d9cfc6 !important;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* WHAT YOU GET */
+.page-leaders .benefits {
+  padding: 48px 24px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.page-leaders .section-label {
+  font-family: Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c4622d !important;
+  margin-bottom: 20px;
+}
+
+.page-leaders .benefits h2 {
+  font-size: 1.5rem;
+  color: #2c1a0e !important;
+  margin-bottom: 28px;
+}
+
+.page-leaders .benefits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 520px) {
+  .page-leaders .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.page-leaders .benefit-card {
+  background-color: #fff8f2 !important;
+  border: 1px solid #e8ddd3 !important;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.page-leaders .benefit-icon {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+  color: #c4622d !important;
+  display: flex;
+}
+
+.page-leaders .benefit-card h3 {
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #2c1a0e !important;
+  margin-bottom: 4px;
+}
+
+.page-leaders .benefit-card p {
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #6b4c32 !important;
+  line-height: 1.5;
+}
+
+/* DIVIDER */
+.page-leaders .divider {
+  border: none;
+  border-top: 1px solid #e8ddd3 !important;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* FORM SECTION */
+.page-leaders .form-section {
+  padding: 48px 24px 64px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.page-leaders .form-section h2 {
+  font-size: 1.5rem;
+  color: #2c1a0e !important;
+  margin-bottom: 8px;
+}
+
+.page-leaders .form-section .form-intro {
+  font-family: Arial, sans-serif;
+  font-size: 0.9rem;
+  color: #6b4c32 !important;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.page-leaders .form-group {
+  margin-bottom: 22px;
+}
+
+.page-leaders label {
+  display: block;
+  font-family: Arial, sans-serif;
+  font-size: 0.88rem;
+  font-weight: bold;
+  color: #2c1a0e !important;
+  margin-bottom: 7px;
+}
+
+.page-leaders label .required {
+  color: #c4622d !important;
+  margin-left: 3px;
+}
+
+.page-leaders input[type='text'],
+.page-leaders input[type='email'],
+.page-leaders select,
+.page-leaders textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background-color: #ffffff !important;
+  color: #2c1a0e !important;
+  border: 1.5px solid #d4c4b4 !important;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.page-leaders input[type='text']:focus,
+.page-leaders input[type='email']:focus,
+.page-leaders select:focus,
+.page-leaders textarea:focus {
+  border-color: #c4622d !important;
+}
+
+.page-leaders textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.page-leaders .select-wrapper {
+  position: relative;
+}
+
+.page-leaders .select-wrapper .select-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c4622d !important;
+  pointer-events: none;
+  font-size: 1rem;
+  display: flex;
+}
+
+/* RADIO GROUP */
+.page-leaders .radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-leaders .radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: #2c1a0e !important;
+}
+
+.page-leaders .radio-option input[type='radio'] {
+  accent-color: #c4622d;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+}
+
+/* SUBMIT */
+.page-leaders .submit-btn {
+  width: 100%;
+  padding: 15px;
+  background-color: #c4622d !important;
+  color: #faf3ec !important;
+  border: none;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+}
+
+.page-leaders .submit-btn:hover:not(:disabled) {
+  background-color: #a8501f !important;
+}
+
+.page-leaders .submit-btn:disabled {
+  background-color: #c4a48d !important;
+  cursor: not-allowed;
+}
+
+/* SUCCESS STATE */
+.page-leaders .success-box {
+  background-color: #fff8f2 !important;
+  border: 1.5px solid #c4622d !important;
+  border-radius: 12px;
+  padding: 36px 28px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.page-leaders .success-box .success-icon {
+  font-size: 2.5rem;
+  margin-bottom: 14px;
+  color: #c4622d !important;
+  display: flex;
+  justify-content: center;
+}
+
+.page-leaders .success-box h3 {
+  font-size: 1.3rem;
+  color: #2c1a0e !important;
+  margin-bottom: 10px;
+}
+
+.page-leaders .success-box p {
+  font-family: Arial, sans-serif;
+  font-size: 0.9rem;
+  color: #6b4c32 !important;
+  line-height: 1.6;
+}
+
+/* ERROR MESSAGE */
+.page-leaders .error-msg {
+  background-color: #fff0eb !important;
+  border: 1px solid #e07a50 !important;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: Arial, sans-serif;
+  font-size: 0.88rem;
+  color: #8b3a1a !important;
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* FOOTER */
+.page-leaders footer {
+  background-color: #2c1a0e !important;
+  color: #d9cfc6 !important;
+  text-align: center;
+  padding: 28px 24px;
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+}
+
+.page-leaders footer a {
+  color: #c4622d !important;
+  text-decoration: none;
+}

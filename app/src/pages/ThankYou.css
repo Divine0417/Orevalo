@@ -1,0 +1,238 @@
+/** Post-signup confirmation page — ported from thank-you.html. */
+
+.page-thankyou {
+  --sand: #fdf6ed;
+  --clay: #c8622a;
+  --clay-lt: #e8845a;
+  --ink: #1e1612;
+  --muted: #6b5b4e;
+  --white: #ffffff;
+  --green: #2e7d5e;
+  --green-lt: #eaf4ef;
+
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--sand);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 5vw;
+  text-align: center;
+}
+
+.page-thankyou .confetti-wrap {
+  font-size: 3rem;
+  margin-bottom: 24px;
+  color: var(--green);
+  display: flex;
+  justify-content: center;
+  animation: ty-bounce 1s ease both;
+}
+
+@keyframes ty-bounce {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.page-thankyou .card {
+  background: var(--white);
+  border-radius: 28px;
+  padding: 56px 48px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 8px 48px rgba(200, 98, 42, 0.1);
+  border: 1px solid rgba(200, 98, 42, 0.1);
+  animation: ty-fade-up 0.6s ease both 0.2s;
+}
+
+@keyframes ty-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-thankyou .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green-lt);
+  color: var(--green);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 100px;
+  margin-bottom: 24px;
+}
+
+.page-thankyou .badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.page-thankyou h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.page-thankyou h1 em {
+  font-style: italic;
+  color: var(--clay);
+}
+
+.page-thankyou p.sub {
+  font-size: 1rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 36px;
+}
+
+.page-thankyou .divider {
+  width: 48px;
+  height: 3px;
+  background: var(--clay);
+  border-radius: 100px;
+  margin: 0 auto 32px;
+  opacity: 0.3;
+  border: none;
+}
+
+.page-thankyou .what-next {
+  text-align: left;
+  margin-bottom: 36px;
+}
+
+.page-thankyou .what-next h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--clay);
+  margin-bottom: 16px;
+}
+
+.page-thankyou .next-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.page-thankyou .next-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(200, 98, 42, 0.1);
+  color: var(--clay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.page-thankyou .next-text h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.page-thankyou .next-text p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.page-thankyou .social-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.page-thankyou .social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid rgba(200, 98, 42, 0.2);
+  border-radius: 100px;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.page-thankyou .social-btn:hover {
+  border-color: var(--clay);
+  background: rgba(200, 98, 42, 0.04);
+}
+
+.page-thankyou .back-btn {
+  display: inline-block;
+  background: var(--clay);
+  color: var(--white);
+  text-decoration: none;
+  padding: 14px 36px;
+  border-radius: 100px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.page-thankyou .back-btn:hover {
+  background: var(--clay-lt);
+  transform: translateY(-2px);
+}
+
+.page-thankyou .logo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--clay);
+  margin-top: 36px;
+}
+
+.page-thankyou .logo span {
+  color: var(--ink);
+}
+
+.page-thankyou .tagline {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+@media (max-width: 520px) {
+  .page-thankyou .card {
+    padding: 40px 26px;
+  }
+}
