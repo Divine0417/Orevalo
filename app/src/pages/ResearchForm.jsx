@@ -1,4 +1,7 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
+  ArrowLeft,
   Bell,
   Briefcase,
   Document,
@@ -106,9 +109,33 @@ const PRICING = [
 const SCALE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export default function ResearchForm() {
+  const navigate = useNavigate()
+  const [status, setStatus] = useState('idle') // idle | sending | error
+
+  async function submit(e) {
+    e.preventDefault()
+    const form = e.currentTarget
+    setStatus('sending')
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error('Submission failed')
+      navigate('/thank-you')
+    } catch {
+      setStatus('error')
+    }
+  }
+
   return (
     <div className="page-research">
       <div className="container">
+        <Link to="/" className="back-home">
+          <ArrowLeft /> Back to home
+        </Link>
         <div className="header">
           <div className="logo">
             <span>Ore</span>valo
@@ -123,7 +150,7 @@ export default function ResearchForm() {
           </p>
         </div>
 
-        <form action={FORMSPREE_ENDPOINT} method="POST">
+        <form onSubmit={submit}>
           {/* Section 1 */}
           <div className="form-card">
             <div className="section-title">01 — About You</div>
@@ -327,9 +354,16 @@ export default function ResearchForm() {
             </div>
           </div>
 
-          <button type="submit" className="submit-btn">
-            Submit — Join Early Access <Rocket />
+          <button type="submit" className="submit-btn" disabled={status === 'sending'}>
+            {status === 'sending' ? 'Submitting...' : 'Submit — Join Early Access'} <Rocket />
           </button>
+
+          {status === 'error' && (
+            <p className="submit-error" role="alert">
+              Something went wrong sending your answers. Please try again, or email them to
+              hello@orevalo.com — nothing you typed has been lost.
+            </p>
+          )}
         </form>
 
         <p className="footer-note">

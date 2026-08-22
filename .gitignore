@@ -1,0 +1,21 @@
+# Next.js + Supabase rebuild, in progress and deliberately untracked for now.
+# Remove this line when the app is ready to be committed and reviewed.
+/web/
+orevalo-roadmap.md
+orevalo-roadmap.docx
+
+# Dependencies and build output
+node_modules/
+dist/
+.next/
+out/
+
+# Environment — never commit real keys
+.env
+.env.local
+.env.*.local
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.log

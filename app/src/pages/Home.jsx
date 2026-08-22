@@ -13,6 +13,7 @@ import {
   Seedling,
   XTwitter,
 } from '../components/icons/Icons.jsx'
+import SiteNav from '../components/SiteNav.jsx'
 import {
   DEADLINE_ICON,
   WAITLIST_COUNT,
@@ -26,6 +27,7 @@ import {
   timeline,
   universities,
 } from '../data/home.js'
+import { footerLinks } from '../data/nav.js'
 import './Home.css'
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xpqgljzy'
@@ -34,7 +36,7 @@ export default function Home() {
   return (
     <div className="page-home">
       <StudentLeadersPopup />
-      <Nav />
+      <SiteNav />
       <Hero />
       <Strip />
       <Universities />
@@ -51,7 +53,7 @@ export default function Home() {
   )
 }
 
-/* ---------------------------------------------------------------- popup -- */
+/* -- popup -- */
 
 /** Appears 3s after load, once per browser session. */
 function StudentLeadersPopup() {
@@ -96,27 +98,9 @@ function StudentLeadersPopup() {
   )
 }
 
-/* ------------------------------------------------------------------ nav -- */
+/* -- nav -- */
 
-function Nav() {
-  return (
-    <nav>
-      <span className="logo">
-        Ore<span>valo</span>
-      </span>
-      <div className="nav-links">
-        <Link to="/internships" className="nav-link">
-          Internships
-        </Link>
-        <a href="#waitlist" className="nav-cta">
-          Join Waitlist
-        </a>
-      </div>
-    </nav>
-  )
-}
-
-/* ----------------------------------------------------------------- hero -- */
+/* -- hero -- */
 
 function Hero() {
   return (
@@ -179,7 +163,7 @@ function Universities() {
   )
 }
 
-/* -------------------------------------------------------------- sections -- */
+/* -- sections -- */
 
 function Problem() {
   return (
@@ -377,7 +361,7 @@ function Faq() {
   )
 }
 
-/* ------------------------------------------------------------- waitlist -- */
+/* -- waitlist -- */
 
 function WaitlistCta() {
   const [email, setEmail] = useState('')
@@ -516,12 +500,19 @@ function ThankYouOverlay({ onClose }) {
   )
 }
 
-/* --------------------------------------------------------------- footer -- */
+/* -- footer -- */
 
 function Footer() {
   return (
     <footer>
       <span className="logo">Orevalo</span>
+      <nav className="footer-nav" aria-label="Pages">
+        {footerLinks.map(({ to, label }) => (
+          <Link key={to} to={to}>
+            {label}
+          </Link>
+        ))}
+      </nav>
       <p style={{ marginBottom: 12 }}>
         <a href="mailto:hello@orevalo.com">hello@orevalo.com</a>
         <a href="https://x.com/OrevaloAI" target="_blank" rel="noreferrer">

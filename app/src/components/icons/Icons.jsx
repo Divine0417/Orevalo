@@ -209,6 +209,13 @@ export const Close = (p) => (
   </Svg>
 )
 
+/** Hamburger control that opens the navigation menu on small screens. */
+export const Menu = (p) => (
+  <Svg strokeWidth={2} {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Svg>
+)
+
 /** Replaces the rightwards arrow on buttons and links. */
 export const ArrowRight = (p) => (
   <Svg strokeWidth={2} {...p}>

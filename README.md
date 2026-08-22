@@ -5,8 +5,10 @@ board, CV building and opportunity alerts, built for African university students
 
 Live at **[orevalo.com](https://orevalo.com)** · **<hello@orevalo.com>**
 
-> **Status:** pre-launch. The marketing site and research forms are live; the MVP (internship board
-> and CV builder) is in development, targeting a Q4 2026 launch for waitlist members.
+> **Status:** pre-launch, early validation. The landing page, research form and Student Leaders
+> Program are live and the waitlist is growing. Phase 0 (manual curation — real opportunities
+> emailed to research respondents) is running now; Phase 1 builds the Internship Board and
+> Scholarship Finder. See [`orevalo-roadmap.md`](orevalo-roadmap.md).
 
 ---
 
@@ -14,13 +16,19 @@ Live at **[orevalo.com](https://orevalo.com)** · **<hello@orevalo.com>**
 
 The repo holds two things side by side, on purpose:
 
-|  | What it is | Status |
+| Area | What it is | Status |
 | --- | --- | --- |
 | **Repo root** (`index.html`, `student-leaders.html`, …) | The static site currently serving orevalo.com | **Live** — deployed from `main` via GitHub Pages |
 | **[`app/`](app/)** | A React port of the whole site, plus the new internship listings page | In development — not yet deployed |
 
 The static pages are deliberately left untouched while the React app is built up. Nothing in
 `app/` affects the live site until the deploy is deliberately switched over.
+
+Planning lives in **[`orevalo-roadmap.md`](orevalo-roadmap.md)** — phases, validated research,
+business model, stack of record and next steps. It is a conversion of `orevalo-roadmap.docx`
+(the CEO's original), kept in the repo so the plan is diffable and readable in a pull request.
+**The `.docx` remains the authority**; regenerate the Markdown rather than editing it by hand
+when the plan changes.
 
 ---
 
@@ -168,10 +176,11 @@ Fonts. The Student Leaders page is the exception — it uses Georgia and Arial, 
 
 ## Roadmap
 
-From `orevalo-roadmap.docx` (internal CEO reference), which is the source of truth for phasing.
-Build order follows the research: 12+ Nigerian students named internship discovery and scholarship
-finding as their top two pain points, and 83% said they would pay something (target NGN 1,000–3,000
-per month).
+Summarised from **[`orevalo-roadmap.md`](orevalo-roadmap.md)** — read that for the full plan.
+Build order follows the research rather than intuition: 12+ Nigerian students named internship
+discovery and scholarship finding as their top two pain points, 83% said they would pay something
+(target NGN 1,000–3,000/month), and **no respondent named an existing African opportunities
+platform they already use.**
 
 | Phase | Window | Scope |
 | --- | --- | --- |
@@ -184,7 +193,21 @@ Feature build order: Internship Board → Scholarship Finder → CV Builder → 
 Opportunity Alerts → AI Chat Tutor.
 
 **Business model:** Free tier forever (board, finder, basic CV builder); Premium at NGN 2,000/month
-(unlimited AI tutor, priority alerts, advanced tools, exclusive opportunities).
+(unlimited AI tutor, priority alerts, advanced tools, exclusive opportunities). Payments via
+Paystack.
+
+### Where the internships page fits
+
+The roadmap lists **"CTO completes test task — Internship Listings Page"** as an immediate next
+step, and Phase 1 then wants that same page in production at `orevalo.com/internships` alongside
+`orevalo.com/scholarships`. The page in [`app/`](app/src/pages/Internships.jsx) already meets the
+Phase 1 listing spec — company, role, location, deadline and apply link, filterable by field and
+location, responsive — but is missing the parts Phase 1 adds:
+
+- Listings served from Supabase instead of a local module
+- An admin panel for adding and editing listings without touching code
+- A matching `/scholarships` page (filter by country, field of study, degree level)
+- 50+ real listings before launch
 
 ### Planned stack vs. what is in `app/` today
 
@@ -193,11 +216,13 @@ deployed yet, so this is still an open decision:
 
 | Layer | Roadmap specifies | `app/` currently uses |
 | --- | --- | --- |
-| Framework | Next.js | React 19 + Vite |
+| Frontend | Next.js + Tailwind CSS | React 19 + Vite, scoped plain CSS |
 | Routing | Next.js file-based | React Router |
-| Styling | Tailwind CSS | Scoped plain CSS per page |
 | Database | Supabase (PostgreSQL) | none — listings are a local module |
+| Backend | Node.js + Supabase Functions | none |
 | Hosting | Vercel | GitHub Pages (static site only) |
+| Payments | Paystack | n/a until Premium ships |
+| AI API | Gemini or Groq | n/a — Phase 3, pending funding |
 
 `app/` is a faithful React port of the existing site plus the internship listings page. Migrating it
 to Next.js + Tailwind later is mechanical — the components, icon set and data modules all carry

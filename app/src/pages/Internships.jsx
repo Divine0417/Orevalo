@@ -45,8 +45,10 @@ export default function Internships() {
             </span>
             <span className="tagline">Study smart. Build your future.</span>
           </Link>
-          <Link to="/" className="back-link">
-            <ArrowLeft /> Back to home
+          {/* Label collapses to an icon-only button on small screens. */}
+          <Link to="/" className="back-link" aria-label="Back to home">
+            <ArrowLeft />
+            <span className="back-label">Back to home</span>
           </Link>
         </div>
       </header>
