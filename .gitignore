@@ -1,7 +1,7 @@
 # Next.js + Supabase rebuild, in progress and deliberately untracked for now.
 # Remove this line when the app is ready to be committed and reviewed.
-/web/
-orevalo-roadmap.md
+# /web/
+# orevalo-roadmap.md
 orevalo-roadmap.docx
 
 # Dependencies and build output

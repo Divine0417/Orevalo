@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/**
+ * Orevalo brand tokens.
+ *
+ * Tailwind v4 is configured in CSS: everything declared in @theme becomes a
+ * utility, so `--color-clay` gives you bg-clay, text-clay, border-clay, and so
+ * on. This is the single source of truth for the palette — add a colour here
+ * rather than hardcoding a hex anywhere in a component.
+ */
+@theme {
+  --color-cream: #faf3ec;
+  --color-cream-deep: #f3e8db;
+  --color-clay: #c4622d;
+  --color-clay-dark: #a8501f;
+  --color-clay-light: #e8845a;
+  --color-ink: #2c1a0e;
+  --color-muted: #6b4c32;
+  --color-line: #e8ddd3;
+  --color-moss: #2e7d5e;
+
+  /* Wired to the next/font variables set in layout.tsx. */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* The brand is a light one; opting out keeps mobile browsers from
+     auto-inverting the palette the way they did on the static pages. */
+  :root {
+    color-scheme: light only;
+  }
+
+  /**
+   * Hide the native <details> disclosure triangle so the FAQ can draw its own.
+   *
+   * Keep this as a plain base rule. Expressing it as an arbitrary Tailwind
+   * variant targeting the webkit details-marker pseudo-element generates a
+   * class name that Tailwind mis-escapes into a hex escape, which swallows the
+   * following characters and emits CSS the browser cannot parse.
+   *
+   * Do not write that utility anywhere in this project — not even inside a
+   * comment. Tailwind scans raw file text, so a comment mentioning it is enough
+   * to regenerate the broken rule.
+   */
+  summary {
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
