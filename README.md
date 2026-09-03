@@ -5,10 +5,10 @@ board, CV building and opportunity alerts, built for African university students
 
 Live at **[orevalo.com](https://orevalo.com)** · **<hello@orevalo.com>**
 
-> **Status:** pre-launch, early validation. The landing page, research form and Student Leaders
-> Program are live and the waitlist is growing. Phase 0 (manual curation — real opportunities
-> emailed to research respondents) is running now; Phase 1 builds the Internship Board and
-> Scholarship Finder. See [`orevalo-roadmap.md`](orevalo-roadmap.md).
+> **Status:** early platform release. The Next.js application is ready for Vercel deployment and
+> includes authentication, Supabase-backed listings and scholarships, saved opportunities, an admin
+> area, and opportunity alerts. The original static site and Vite prototype are also retained in
+> this repository. See [`orevalo-roadmap.md`](orevalo-roadmap.md) for the product plan.
 
 ---
 
@@ -18,11 +18,12 @@ The repo holds two things side by side, on purpose:
 
 | Area | What it is | Status |
 | --- | --- | --- |
-| **Repo root** (`index.html`, `student-leaders.html`, …) | The static site currently serving orevalo.com | **Live** — deployed from `main` via GitHub Pages |
-| **[`app/`](app/)** | A React port of the whole site, plus the new internship listings page | In development — not yet deployed |
+| **[`web/`](web/)** | Next.js application with Supabase auth, listings, scholarships, forms, admin tools and alerts | **Primary app** — deploy to Vercel |
+| **Repo root** (`index.html`, `student-leaders.html`, …) | The original static marketing site and forms | Legacy static site — deployable with GitHub Pages |
+| **[`app/`](app/)** | Vite + React prototype of the marketing site and internship page | Prototype — not the Vercel app |
 
-The static pages are deliberately left untouched while the React app is built up. Nothing in
-`app/` affects the live site until the deploy is deliberately switched over.
+The deployable application is `web/`. The root static pages and `app/` are kept for reference and
+should not be confused with the Next.js application.
 
 Planning lives in **[`orevalo-roadmap.md`](orevalo-roadmap.md)** — phases, validated research,
 business model, stack of record and next steps. It is a conversion of `orevalo-roadmap.docx`
@@ -32,7 +33,76 @@ when the plan changes.
 
 ---
 
-## The static site (live)
+## The Next.js app (`web/`)
+
+This is the current application. It uses Next.js 16, React 19, Supabase, and Vercel Cron. Forms
+and account workflows are implemented in the app; the database schema and row-level security
+migrations are in [`web/supabase/migrations/`](web/supabase/migrations/).
+
+### Run locally
+
+```bash
+cd web
+npm install
+npm run dev       # http://localhost:3000
+```
+
+Validate a production build locally with:
+
+```bash
+cd web
+npm run build
+npm start         # requires the build above
+```
+
+### Vercel deployment
+
+Create a Vercel project connected to this repository with these settings:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `web` |
+| Framework Preset | Next.js |
+| Install Command | `npm install` |
+| Build Command | `npm run build` |
+| Output Directory | Leave blank (Next.js default) |
+
+Add the following environment variables in Vercel for the required environments:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)
+SUPABASE_SERVICE_ROLE_KEY
+CRON_SECRET
+NEXT_PUBLIC_SITE_URL
+```
+
+Optional email delivery variables are:
+
+```text
+RESEND_API_KEY
+EMAIL_FROM
+```
+
+Set `NEXT_PUBLIC_SITE_URL` to the deployed URL, such as
+`https://your-project.vercel.app`, and update it when a custom domain is connected. Never commit
+`.env.local` or any service-role, email, or cron secret. Use [`web/.env.local.example`](web/.env.local.example)
+as the local configuration template. The Vercel Cron job in [`web/vercel.json`](web/vercel.json)
+runs `/api/cron/alerts` daily at 08:00 UTC.
+
+After deployment, add the Vercel and custom-domain URLs to Supabase Authentication URL
+Configuration, including the callback URLs used by login, signup, and password reset.
+
+### Tests and checks
+
+```bash
+cd web
+npm run lint
+npm test
+npm run test:rls
+```
+
+## The static site
 
 Four self-contained pages. Each one carries its own inline `<style>` block and vanilla JS — no
 build step, no dependencies. Deployed straight from `main` by GitHub Pages, with `CNAME` pointing
@@ -52,9 +122,10 @@ To work on these, open the file in a browser — that's the whole loop.
 
 ---
 
-## The React app (`app/`)
+## The Vite prototype (`app/`)
 
-A Vite + React 19 single-page app that ports all four pages and adds the internship listings page.
+A Vite + React 19 single-page prototype that ports all four static pages and adds the internship
+listings page. It is separate from the production Next.js app in `web/`.
 
 ### Running it
 
@@ -209,33 +280,31 @@ location, responsive — but is missing the parts Phase 1 adds:
 - A matching `/scholarships` page (filter by country, field of study, degree level)
 - 50+ real listings before launch
 
-### Planned stack vs. what is in `app/` today
+### Prototype stack vs. production stack
 
 The roadmap specifies a different stack from the one this React app is built on. Nothing here is
 deployed yet, so this is still an open decision:
 
-| Layer | Roadmap specifies | `app/` currently uses |
+| Layer | `web/` production app | `app/` prototype |
 | --- | --- | --- |
-| Frontend | Next.js + Tailwind CSS | React 19 + Vite, scoped plain CSS |
-| Routing | Next.js file-based | React Router |
-| Database | Supabase (PostgreSQL) | none — listings are a local module |
-| Backend | Node.js + Supabase Functions | none |
-| Hosting | Vercel | GitHub Pages (static site only) |
+| Frontend | Next.js + React | React 19 + Vite |
+| Routing | Next.js file-based routing | React Router |
+| Database | Supabase (PostgreSQL) | none — listings are local data |
+| Backend | Next.js server actions and route handlers | none |
+| Hosting | Vercel | Local development only |
 | Payments | Paystack | n/a until Premium ships |
 | AI API | Gemini or Groq | n/a — Phase 3, pending funding |
 
-`app/` is a faithful React port of the existing site plus the internship listings page. Migrating it
-to Next.js + Tailwind later is mechanical — the components, icon set and data modules all carry
-over; routing and styling are what change.
+`app/` is a faithful React port of the original site plus the internship listings page. New product
+work should target `web/` unless the prototype is being maintained intentionally.
 
 ### Backend
 
-There is no backend yet. Forms post directly to Formspree, and internship listings live in
-`src/data/listings.js`. That module is shaped like an API response — ISO dates, stable ids, no
-pre-formatted labels — so a Supabase table can slot in behind it: replace the import in
-`Internships.jsx` with a query into state, and nothing else in the page has to change.
-
-Phase 1 also calls for an admin panel so listings can be added and edited without touching code.
+The production backend lives inside `web/`: Supabase provides authentication, PostgreSQL data and
+row-level security, while Next.js server actions and route handlers handle mutations and scheduled
+alerts. Apply the SQL migrations in [`web/supabase/migrations/`](web/supabase/migrations/) to a
+Supabase project before using the authenticated or admin features. The original static pages and
+the Vite prototype continue to post forms directly to Formspree.
 
 ---
 
