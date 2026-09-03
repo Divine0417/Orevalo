@@ -48,13 +48,11 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
     }
   }
 
-  // With email confirmation switched on in Supabase there is no session yet.
-  const needsConfirmation = !data.session
+  // Keep the application gated even if the Supabase confirmation setting is
+  // accidentally disabled: a password account must prove email ownership.
+  if (data.session) await supabase.auth.signOut()
+  return { ok: true, needsConfirmation: true }
 
-  if (needsConfirmation) return { ok: true, needsConfirmation: true }
-
-  revalidatePath('/', 'layout')
-  redirect('/account')
 }
 
 export async function signIn(_prev: AuthResult | null, formData: FormData): Promise<AuthResult> {
@@ -65,14 +63,33 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
   if (!email || !password) return { ok: false, message: 'Email and password are both required.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   // Deliberately vague: distinguishing "no such user" from "wrong password"
   // tells an attacker which addresses are registered.
   if (error) return { ok: false, message: 'Those credentials were not accepted.' }
 
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut()
+    return { ok: false, message: 'Please confirm your email before signing in.' }
+  }
+
   revalidatePath('/', 'layout')
   redirect(next)
+}
+
+export async function signInWithGoogle(formData: FormData) {
+  const next = safeNext(String(formData.get('next') ?? '/account'))
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
+  })
+
+  if (error || !data.url) redirect('/login?error=oauth')
+  redirect(data.url)
 }
 
 export async function signOut() {

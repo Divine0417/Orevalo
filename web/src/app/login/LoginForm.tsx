@@ -2,19 +2,47 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useActionState, useState } from 'react'
-import { requestPasswordReset, signIn, type AuthResult } from '@/app/auth-actions'
+import { requestPasswordReset, signIn, signInWithGoogle, type AuthResult } from '@/app/auth-actions'
 import { authInput, authLabel } from '@/components/AuthShell'
+import { Google } from '@/components/icons'
 
 export default function LoginForm() {
   const params = useSearchParams()
   const next = params.get('next') ?? '/account'
+  const oauthError = params.get('error')
   const [state, action, pending] = useActionState<AuthResult | null, FormData>(signIn, null)
   const [resetting, setResetting] = useState(false)
+  const errorMessage =
+    oauthError === 'unconfirmed'
+      ? 'Please use a confirmed email account to sign in.'
+      : oauthError === 'oauth'
+        ? 'Google sign-in could not be completed. Please try again.'
+        : state && !state.ok
+          ? state.message
+          : null
 
   if (resetting) return <ResetForm onBack={() => setResetting(false)} />
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <form action={signInWithGoogle}>
+        <input type="hidden" name="next" value={next} />
+        <button
+          type="submit"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-white px-6 py-3.5 font-bold text-ink transition-colors hover:border-clay hover:text-clay"
+        >
+          <Google size="1.25rem" title="Google" />
+          Continue with Google
+        </button>
+      </form>
+
+      <div className="flex items-center gap-3 text-[0.75rem] uppercase tracking-[0.12em] text-muted">
+        <span className="h-px flex-1 bg-line" />
+        or use email
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
+      <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="next" value={next} />
 
       <label className="flex flex-col gap-2">
@@ -33,12 +61,12 @@ export default function LoginForm() {
         />
       </label>
 
-      {state && !state.ok && (
+      {errorMessage && (
         <p
           role="alert"
           className="rounded-xl border border-[#e07a50] bg-[#fff0eb] px-4 py-3 text-[0.88rem] text-[#8b3a1a]"
         >
-          {state.message}
+          {errorMessage}
         </p>
       )}
 
@@ -57,7 +85,8 @@ export default function LoginForm() {
       >
         Forgot your password?
       </button>
-    </form>
+      </form>
+    </div>
   )
 }
 

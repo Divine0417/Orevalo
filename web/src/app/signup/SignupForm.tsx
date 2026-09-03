@@ -1,9 +1,9 @@
 'use client'
 
 import { useActionState } from 'react'
-import { signUp, type AuthResult } from '@/app/auth-actions'
+import { signInWithGoogle, signUp, type AuthResult } from '@/app/auth-actions'
 import { authInput, authLabel } from '@/components/AuthShell'
-import { Mailbox } from '@/components/icons'
+import { Google, Mailbox } from '@/components/icons'
 
 export default function SignupForm() {
   const [state, action, pending] = useActionState<AuthResult | null, FormData>(signUp, null)
@@ -23,7 +23,24 @@ export default function SignupForm() {
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <form action={signInWithGoogle}>
+        <button
+          type="submit"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-white px-6 py-3.5 font-bold text-ink transition-colors hover:border-clay hover:text-clay"
+        >
+          <Google size="1.25rem" title="Google" />
+          Continue with Google
+        </button>
+      </form>
+
+      <div className="flex items-center gap-3 text-[0.75rem] uppercase tracking-[0.12em] text-muted">
+        <span className="h-px flex-1 bg-line" />
+        or use email
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
+      <form action={action} className="flex flex-col gap-4">
       <label className="flex flex-col gap-2">
         <span className={authLabel}>Full name</span>
         <input
@@ -77,6 +94,7 @@ export default function SignupForm() {
       >
         {pending ? 'Creating account...' : 'Create account'}
       </button>
-    </form>
+      </form>
+    </div>
   )
 }
