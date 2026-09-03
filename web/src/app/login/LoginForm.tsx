@@ -43,48 +43,48 @@ export default function LoginForm() {
       </div>
 
       <form action={action} className="flex flex-col gap-4">
-      <input type="hidden" name="next" value={next} />
+        <input type="hidden" name="next" value={next} />
 
-      <label className="flex flex-col gap-2">
-        <span className={authLabel}>Email</span>
-        <input type="email" name="email" required autoComplete="email" autoFocus className={authInput} />
-      </label>
+        <label className="flex flex-col gap-2">
+          <span className={authLabel}>Email</span>
+          <input type="email" name="email" required autoComplete="email" autoFocus className={authInput} />
+        </label>
 
-      <label className="flex flex-col gap-2">
-        <span className={authLabel}>Password</span>
-        <input
-          type="password"
-          name="password"
-          required
-          autoComplete="current-password"
-          className={authInput}
-        />
-      </label>
+        <label className="flex flex-col gap-2">
+          <span className={authLabel}>Password</span>
+          <input
+            type="password"
+            name="password"
+            required
+            autoComplete="current-password"
+            className={authInput}
+          />
+        </label>
 
-      {errorMessage && (
-        <p
-          role="alert"
-          className="rounded-xl border border-[#e07a50] bg-[#fff0eb] px-4 py-3 text-[0.88rem] text-[#8b3a1a]"
+        {errorMessage && (
+          <p
+            role="alert"
+            className="rounded-xl border border-[#e07a50] bg-[#fff0eb] px-4 py-3 text-[0.88rem] text-[#8b3a1a]"
+          >
+            {errorMessage}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="mt-1 cursor-pointer rounded-full bg-clay px-6 py-3.5 font-bold text-white transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {errorMessage}
-        </p>
-      )}
+          {pending ? 'Signing in...' : 'Sign in'}
+        </button>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-1 cursor-pointer rounded-full bg-clay px-6 py-3.5 font-bold text-white transition-colors hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {pending ? 'Signing in...' : 'Sign in'}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setResetting(true)}
-        className="cursor-pointer text-[0.85rem] font-semibold text-muted hover:text-clay"
-      >
-        Forgot your password?
-      </button>
+        <button
+          type="button"
+          onClick={() => setResetting(true)}
+          className="cursor-pointer text-[0.85rem] font-semibold text-muted hover:text-clay"
+        >
+          Forgot your password?
+        </button>
       </form>
     </div>
   )

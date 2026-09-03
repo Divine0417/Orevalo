@@ -42,6 +42,12 @@ export default function AuthShell({
           </Link>{' '}
           are open to everyone.
         </p>
+        <p className="mt-4 text-center text-[0.76rem] leading-[1.6] text-muted">
+          By continuing, you agree to our{' '}
+          <Link href="/terms" className="font-semibold text-clay no-underline">Terms</Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="font-semibold text-clay no-underline">Privacy Policy</Link>.
+        </p>
       </div>
     </main>
   )

@@ -14,6 +14,8 @@ const PAGES = [
   { href: '/#alerts', label: 'Get opportunities' },
   { href: '/student-leaders', label: 'Student Leaders' },
   { href: '/research', label: 'Research survey' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
 ]
 
 const SOCIALS = [

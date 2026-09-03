@@ -270,31 +270,43 @@ export const phases = [
   },
 ]
 
-/** Business model, roadmap section 5. */
+/** Staged pricing; paid features are intentionally marked as planned until live. */
 export const pricing = [
   {
     name: 'Free',
     price: 'NGN 0',
-    cadence: 'forever',
+    cadence: 'during launch',
     highlight: false,
     features: [
-      'Internship & Job Board',
-      'Scholarship Finder',
-      'Basic CV Builder',
-      'Limited AI Tutor',
+      'Browse internships and scholarships',
+      'Basic account and profile',
+      'Save a limited number of opportunities',
+      'Apply through the original provider links',
+    ],
+  },
+  {
+    name: 'Founding plan',
+    price: 'NGN 1,000',
+    cadence: 'per month · planned',
+    highlight: true,
+    features: [
+      'Everything in Free',
+      'Unlimited saves and application tracking',
+      'Personalised alerts and deadline reminders',
+      'Founding-member pricing',
     ],
   },
   {
     name: 'Premium',
     price: 'NGN 2,000',
-    cadence: 'per month',
-    highlight: true,
+    cadence: 'per month · planned',
+    highlight: false,
     features: [
-      'Everything in Free',
-      'Unlimited AI Tutor',
-      'Priority opportunity alerts',
-      'Advanced CV and cover letter tools',
-      'Exclusive opportunities',
+      'Everything in Founding plan',
+      'CV builder and export',
+      'Tailored cover letters',
+      'Advanced matching',
+      'AI tutor when available',
     ],
   },
 ]
@@ -306,7 +318,7 @@ export const faqs = [
   },
   {
     q: 'Is Orevalo free to use?',
-    a: 'Yes. The Internship Board is free today, and the Scholarship Finder and a basic CV Builder will be free too, with no credit card required. Premium will be NGN 2,000 per month and adds unlimited AI tutoring, priority alerts, advanced CV and cover letter tools, and exclusive opportunities.',
+    a: 'Yes. Orevalo is free during launch. A founding plan at NGN 1,000 per month will be tested after paid features such as alerts and application tracking are useful, followed by Premium at NGN 2,000 per month when the full career and AI tools are live. There is no payment available today.',
   },
   {
     q: 'What is actually available today?',

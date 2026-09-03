@@ -165,10 +165,11 @@ AI API costs make Phase 3 dependent on external funding. The target is to raise 
 
 | Tier | Price | Features |
 | --- | --- | --- |
-| Free | NGN 0 forever | Internship Board, Scholarship Finder, Basic CV Builder, limited AI Tutor |
-| Premium | NGN 2,000/month | Everything in Free plus unlimited AI Tutor, priority alerts, advanced CV and cover letter tools, exclusive opportunities |
+| Free launch | NGN 0 | Browse internships and scholarships, basic account and profile, limited saves, direct applications |
+| Founding plan | NGN 1,000/month | Planned: unlimited saves, application tracking, personalised alerts and deadline reminders |
+| Premium | NGN 2,000/month | Planned: Founding features plus CV builder, cover letters, advanced matching and AI tutor when live |
 
-Revenue projection at 1,000 paying users: NGN 2,000,000 per month. 83% of research respondents indicated willingness to pay.
+Pricing is staged. The product launches free; payment should be tested only after the paid features are useful. The NGN 1,000 founding plan comes first, followed by NGN 2,000 Premium when the mature feature set is live. The survey result that 83% of respondents indicated willingness to pay is directional evidence from 12+ respondents, not a market-wide forecast. See [`pricing-strategy.md`](pricing-strategy.md).
 
 ## 6. Technical Stack
 

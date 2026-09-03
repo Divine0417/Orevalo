@@ -446,8 +446,8 @@ function Pricing() {
     <Section id="pricing">
       <SectionHead
         label="Pricing"
-        title="Free forever. Premium when you want more."
-        sub={`The core tools stay free for every student. ${RESEARCH.willingToPay} of the students we surveyed said they would pay for this, at around ${RESEARCH.pricePoint} a month — so that is where Premium sits.`}
+        title="Free at launch. Paid when it earns its place."
+        sub={`Browse and apply for free while we build the product around real student needs. ${RESEARCH.willingToPay} of the students we surveyed said they would pay for this, at around ${RESEARCH.pricePoint} a month — so we will test a NGN 1,000 founding plan before the full NGN 2,000 Premium plan.`}
       />
       <div className="grid max-w-[840px] grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
         {pricing.map(({ name, price, cadence, highlight, features: perks }) => (
@@ -480,7 +480,7 @@ function Pricing() {
         ))}
       </div>
       <p className="mt-6 max-w-[560px] text-[0.85rem] leading-[1.6] text-muted">
-        Universities can license Orevalo so every enrolled student gets Premium at no personal cost.
+        No paid plan is available yet. Universities can later license Orevalo so every enrolled student gets Premium at no personal cost.
         Email <a href="mailto:hello@orevalo.com" className="font-semibold text-clay">hello@orevalo.com</a>.
       </p>
     </Section>
