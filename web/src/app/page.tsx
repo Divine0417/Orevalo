@@ -445,9 +445,9 @@ function Pricing() {
       <SectionHead
         label="Pricing"
         title="Free at launch. Paid when it earns its place."
-        sub={`Browse and apply for free while we build the product around real student needs. ${RESEARCH.willingToPay} of the students we surveyed said they would pay for this, at around ${RESEARCH.pricePoint} a month — so we will test a NGN 1,000 founding plan before the full NGN 2,000 Premium plan.`}
+        sub={`Browse and apply for free while we build the product around real student needs. Join early to get first access to personalised alerts, application tracking, and the career tools coming next.`}
       />
-      <div className="grid max-w-[840px] grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
+      <div className="grid max-w-[1200px] grid-cols-1 gap-6 lg:grid-cols-3">
         {pricing.map(({ name, price, cadence, highlight, features: perks }) => (
           <div
             key={name}
@@ -477,7 +477,7 @@ function Pricing() {
         ))}
       </div>
       <p className="mt-6 max-w-[560px] text-[0.85rem] leading-[1.6] text-muted">
-        No paid plan is available yet. Universities can later license Orevalo so every enrolled student gets Premium at no personal cost.
+        Paid access will open soon, with Plus members receiving early access and the best rate. Universities can later license Orevalo so every enrolled student gets Premium at no personal cost.
         Email <a href="mailto:hello@orevalo.com" className="font-semibold text-clay">hello@orevalo.com</a>.
       </p>
     </Section>

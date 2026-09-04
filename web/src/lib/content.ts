@@ -285,24 +285,24 @@ export const pricing = [
     ],
   },
   {
-    name: 'Founding plan',
+    name: 'Plus',
     price: 'NGN 1,000',
-    cadence: 'per month · planned',
+    cadence: 'per month · coming soon',
     highlight: true,
     features: [
       'Everything in Free',
       'Unlimited saves and application tracking',
       'Personalised alerts and deadline reminders',
-      'Founding-member pricing',
+      'Early access and member pricing',
     ],
   },
   {
     name: 'Premium',
     price: 'NGN 2,000',
-    cadence: 'per month · planned',
+    cadence: 'per month · coming soon',
     highlight: false,
     features: [
-      'Everything in Founding plan',
+      'Everything in Plus',
       'CV builder and export',
       'Tailored cover letters',
       'Advanced matching',
@@ -318,7 +318,7 @@ export const faqs = [
   },
   {
     q: 'Is Orevalo free to use?',
-    a: 'Yes. Orevalo is free during launch. A founding plan at NGN 1,000 per month will be tested after paid features such as alerts and application tracking are useful, followed by Premium at NGN 2,000 per month when the full career and AI tools are live. There is no payment available today.',
+    a: 'Yes. Orevalo is free during launch. Plus members will get early access to personalised alerts and application tracking at NGN 1,000 per month. Premium will follow at NGN 2,000 per month with the full career and AI tools. There is no payment available today.',
   },
   {
     q: 'What is actually available today?',
