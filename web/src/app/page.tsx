@@ -342,8 +342,8 @@ function Opportunities() {
           >
             <span
               className={`mb-3.5 inline-block rounded-full px-3 py-1 text-[0.7rem] font-bold tracking-[0.1em] uppercase ${opp.type === 'Scholarship'
-                  ? 'bg-moss/25 text-[#6ecfa3]'
-                  : 'bg-clay/25 text-clay-light'
+                ? 'bg-moss/25 text-[#6ecfa3]'
+                : 'bg-clay/25 text-clay-light'
                 }`}
             >
               {opp.type}
@@ -414,10 +414,10 @@ function Roadmap() {
           <li key={label} className="relative flex gap-6 pb-8 last:pb-0">
             <span
               className={`z-1 flex size-9.5 shrink-0 items-center justify-center rounded-full ${state === 'done'
-                  ? 'bg-clay text-white'
-                  : state === 'active'
-                    ? 'bg-moss text-white ring-4 ring-moss/20'
-                    : 'border-2 border-clay/30 bg-white text-muted'
+                ? 'bg-clay text-white'
+                : state === 'active'
+                  ? 'bg-moss text-white ring-4 ring-moss/20'
+                  : 'border-2 border-clay/30 bg-white text-muted'
                 }`}
             >
               <Icon size="1.05em" />
@@ -452,8 +452,8 @@ function Pricing() {
           <div
             key={name}
             className={`flex flex-col rounded-[20px] p-8 ${highlight
-                ? 'border-2 border-clay bg-white shadow-[0_12px_40px_rgba(196,98,45,0.12)]'
-                : 'border border-clay/10 bg-white'
+              ? 'border-2 border-clay bg-white shadow-[0_12px_40px_rgba(196,98,45,0.12)]'
+              : 'border border-clay/10 bg-white'
               }`}
           >
             <div className="mb-6">
