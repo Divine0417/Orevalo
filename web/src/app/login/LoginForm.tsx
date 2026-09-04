@@ -100,7 +100,8 @@ function ResetForm({ onBack }: { onBack: () => void }) {
     return (
       <div>
         <p className="mb-5 rounded-xl border border-moss/40 bg-moss/10 px-4 py-3 text-[0.9rem] leading-[1.6] text-moss">
-          If that address has an account, a reset link is on its way.
+          If that address has an account, a reset link is on its way. Check your inbox and spam
+          folder, then use the link to choose a new password.
         </p>
         <button
           type="button"

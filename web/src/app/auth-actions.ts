@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
-import { siteUrl } from '@/lib/email'
+import { isMailerConfigured, sendWelcomeEmail, siteUrl } from '@/lib/email'
 import { isApplicationStatus, type ApplicationStatus } from '@/lib/supabase/types'
 import { safeNext } from '@/lib/auth'
 import { PASSWORD_RESET_PATH } from '@/lib/auth'
@@ -46,6 +46,11 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
           ? error.message
           : 'We could not create that account. Try signing in instead.',
     }
+  }
+
+  if (isMailerConfigured && data.user) {
+    const welcomeName = String(data.user.user_metadata?.full_name ?? fullName)
+    await sendWelcomeEmail({ to: email, firstName: welcomeName.split(/\s+/)[0] ?? 'there' })
   }
 
   // Keep the application gated even if the Supabase confirmation setting is

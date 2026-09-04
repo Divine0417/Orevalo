@@ -58,6 +58,69 @@ export async function sendOpportunityAlertEmail(args: {
   return send(args)
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;',
+    }
+    return entities[character]
+  })
+}
+
+/** Sends the branded welcome email once an account is created. */
+export async function sendWelcomeEmail(args: { to: string; firstName: string }) {
+  const base = siteUrl()
+  const firstName = escapeHtml(args.firstName || 'there')
+  const accountUrl = `${base}/account`
+
+  return send({
+    to: args.to,
+    subject: 'Welcome to Orevalo',
+    text: [
+      `Welcome, ${args.firstName || 'there'}`,
+      '',
+      'You are now part of a growing community of African students building their future, one opportunity at a time.',
+      '',
+      'Browse internships and jobs, find scholarships, and save opportunities you want to come back to.',
+      '',
+      `Open your account: ${accountUrl}`,
+      '',
+      'Orevalo — Study smart. Build your future.',
+    ].join('\n'),
+    html: `
+<div style="margin:0;padding:32px 16px;background:#FAF3EC;font-family:Georgia,'Times New Roman',serif;color:#2C1A0E">
+  <div style="max-width:480px;margin:0 auto;overflow:hidden;background:#fff;border-radius:12px">
+    <div style="padding:32px 32px 24px;background:#2C1A0E;text-align:center">
+      <span style="color:#FAF3EC;font-size:24px;font-weight:bold;letter-spacing:.5px">Orevalo</span>
+    </div>
+    <div style="padding:40px 32px 24px">
+      <h1 style="margin:0 0 16px;color:#2C1A0E;font-size:22px;line-height:1.3">Welcome, ${firstName}</h1>
+      <p style="margin:0 0 20px;color:#2C1A0E;font-size:15px;line-height:1.6">You are now part of a growing community of African students building their future, one opportunity at a time.</p>
+      <p style="margin:0 0 8px;color:#2C1A0E;font-size:15px;font-weight:bold;line-height:1.6">Here is what you can do right now:</p>
+    </div>
+    <div style="padding:0 32px 24px;color:#2C1A0E;font-size:14px;line-height:1.5">
+      <p style="padding:10px 0;margin:0;border-bottom:1px solid #FAF3EC">→ Browse internships and jobs curated for students like you</p>
+      <p style="padding:10px 0;margin:0;border-bottom:1px solid #FAF3EC">→ Find scholarships that match your field of study</p>
+      <p style="padding:10px 0;margin:0">→ Save opportunities you want to come back to</p>
+    </div>
+    <div style="padding:8px 32px 40px;text-align:center">
+      <a href="${accountUrl}" style="display:inline-block;padding:14px 36px;border-radius:8px;background:#C4622D;color:#fff;font-size:15px;font-weight:bold;text-decoration:none">Go to your account</a>
+    </div>
+    <div style="padding:0 32px 32px;border-top:1px solid #FAF3EC;text-align:center">
+      <p style="margin:24px 0 0;color:#C4622D;font-size:14px;font-style:italic;font-weight:bold">Study smart. Build your future.</p>
+    </div>
+    <div style="padding:24px 32px;background:#FAF3EC;text-align:center">
+      <p style="margin:0;color:#8a7568;font-size:11px;line-height:1.5">You are receiving this email because you created an Orevalo account.<br><a href="${base}/privacy" style="color:#8a7568">Privacy Policy</a> · <a href="${base}/terms" style="color:#8a7568">Terms</a></p>
+    </div>
+  </div>
+</div>`.trim(),
+  })
+}
+
 /**
  * Asks a new subscriber to prove they own the address.
  *

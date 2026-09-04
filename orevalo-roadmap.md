@@ -18,7 +18,7 @@ The platform is currently in early validation with a live landing page at oreval
 | Expansion Target | Pan-African - Ghana, Kenya, South Africa and beyond |
 | Tech Stack | Next.js, Supabase, Node.js, Tailwind CSS |
 | Current Hosting | GitHub Pages (orevalo.com) |
-| Email | hello@orevalo.com |
+| Email | <hello@orevalo.com> |
 
 ## 2. Validated Research Findings
 
@@ -193,7 +193,7 @@ Pricing is staged. The product launches free; payment should be tested only afte
 | Waitlist signups | Active and growing |
 | Research respondents | 12+ Nigerian students surveyed |
 | Social media | @OrevaloAI on X, Instagram, LinkedIn, Facebook |
-| Professional email | hello@orevalo.com via Zoho Mail |
+| Professional email | <hello@orevalo.com> via Zoho Mail |
 | Institutional partner | Edoofa partnership in progress |
 | Student Leaders Program | Live at orevalo.com/student-leaders.html |
 | Phase 0 | Curated list of 20 opportunities sent to 12+ respondents |
@@ -210,4 +210,4 @@ Pricing is staged. The product launches free; payment should be tested only afte
 
 ---
 
-*Orevalo | orevalo.com | hello@orevalo.com*
+*Orevalo | orevalo.com | <hello@orevalo.com>*

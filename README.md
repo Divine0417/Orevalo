@@ -93,6 +93,23 @@ runs `/api/cron/alerts` daily at 08:00 UTC.
 After deployment, add the Vercel and custom-domain URLs to Supabase Authentication URL
 Configuration, including the callback URLs used by login, signup, and password reset.
 
+### Password reset email
+
+Supabase Auth sends password-reset emails directly. Copy
+[`web/email-templates/password-recovery.html`](web/email-templates/password-recovery.html) into
+Supabase **Authentication → Email Templates → Reset Password**. Keep `{{ .ConfirmationURL }}`
+unchanged so Supabase inserts the secure link to `/reset-password`.
+
+If Supabase custom SMTP is unavailable, use the Resend-based Send Email Hook guide:
+[`web/docs/supabase-send-email-hook.md`](web/docs/supabase-send-email-hook.md). It covers the
+Edge Function, secrets, Auth Hook configuration, testing, and troubleshooting.
+
+### Admin account
+
+Promote `hello@orevalo.com` after creating and confirming the account by following
+[`web/docs/admin-account.md`](web/docs/admin-account.md). Admin access is role-based through
+Supabase and is not hard-coded into the application.
+
 ### Tests and checks
 
 ```bash

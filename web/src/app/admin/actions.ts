@@ -17,11 +17,16 @@ export async function signIn(_prev: ActionResult | null, formData: FormData): Pr
   if (!email || !password) return { ok: false, message: 'Email and password are both required.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   // Deliberately vague: distinguishing "no such user" from "wrong password"
   // tells an attacker which emails are registered.
   if (error) return { ok: false, message: 'Those credentials were not accepted.' }
+
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut()
+    return { ok: false, message: 'Please confirm your email before entering the admin area.' }
+  }
 
   redirect(next.startsWith('/admin') ? next : '/admin')
 }
