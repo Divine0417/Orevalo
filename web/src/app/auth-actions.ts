@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
-import { isMailerConfigured, sendWelcomeEmail, siteUrl } from '@/lib/email'
+import {
+  isMailerConfigured,
+  sendPasswordChangedEmail,
+  sendPasswordResetRequestedEmail,
+  siteUrl,
+} from '@/lib/email'
 import { isApplicationStatus, type ApplicationStatus } from '@/lib/supabase/types'
 import { safeNext } from '@/lib/auth'
 import { PASSWORD_RESET_PATH } from '@/lib/auth'
@@ -32,7 +37,7 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
     options: {
       // Read by the handle_new_user trigger from 0001 to populate the profile.
       data: { full_name: fullName },
-      emailRedirectTo: `${siteUrl()}/account`,
+      emailRedirectTo: `${siteUrl()}/auth/callback?next=%2Faccount&welcome=1`,
     },
   })
 
@@ -46,11 +51,6 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
           ? error.message
           : 'We could not create that account. Try signing in instead.',
     }
-  }
-
-  if (isMailerConfigured && data.user) {
-    const welcomeName = String(data.user.user_metadata?.full_name ?? fullName)
-    await sendWelcomeEmail({ to: email, firstName: welcomeName.split(/\s+/)[0] ?? 'there' })
   }
 
   // Keep the application gated even if the Supabase confirmation setting is
@@ -116,8 +116,24 @@ export async function requestPasswordReset(
     redirectTo: `${siteUrl()}${PASSWORD_RESET_PATH}`,
   })
 
+  if (isMailerConfigured) {
+    await sendPasswordResetRequestedEmail({ to: email })
+  }
+
   // Always report success: whether an address is registered is not public.
   return { ok: true }
+}
+
+export async function sendPasswordChangedNotice() {
+  if (!isMailerConfigured) return
+
+  const { user } = await getCurrentUser()
+  if (!user?.email) return
+
+  await sendPasswordChangedEmail({
+    to: user.email,
+    firstName: String(user.user_metadata?.full_name ?? user.user_metadata?.name ?? '').split(/\s+/)[0] || undefined,
+  })
 }
 
 /* ------------------------------------------------------ saved opportunities -- */

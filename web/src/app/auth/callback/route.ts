@@ -6,6 +6,7 @@ import { isMailerConfigured, sendWelcomeEmail } from '@/lib/email'
 export async function GET(request: NextRequest) {
     const code = request.nextUrl.searchParams.get('code')
     const next = safeNext(request.nextUrl.searchParams.get('next') ?? '/account')
+    const sendWelcome = request.nextUrl.searchParams.get('welcome') === '1'
 
     if (!code) return NextResponse.redirect(new URL('/login?error=oauth', request.url))
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/login?error=unconfirmed', request.url))
     }
 
-    if (isMailerConfigured && !data.user.user_metadata?.welcome_email_sent_at) {
+    if (isMailerConfigured && (sendWelcome || data.user.app_metadata?.provider === 'google') && !data.user.user_metadata?.welcome_email_sent_at) {
         const fullName = String(data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? '')
         const sent = await sendWelcomeEmail({
             to: data.user.email ?? '',

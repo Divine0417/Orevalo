@@ -121,6 +121,103 @@ export async function sendWelcomeEmail(args: { to: string; firstName: string }) 
   })
 }
 
+export function sendPasswordResetRequestedEmail(args: { to: string }) {
+  return sendFormReceiptEmail({
+    ...args,
+    firstName: 'there',
+    subject: 'Password reset requested — Orevalo',
+    heading: 'Reset request received',
+    message:
+      'We received a request to reset the password for this email address. If it belongs to an Orevalo account, Supabase has sent a separate password reset link. If you did not make this request, you can safely ignore this message.',
+    nextUrl: '/login',
+    nextLabel: 'Return to sign in',
+  })
+}
+
+export function sendPasswordChangedEmail(args: { to: string; firstName?: string }) {
+  return sendFormReceiptEmail({
+    to: args.to,
+    firstName: args.firstName ?? 'there',
+    subject: 'Your Orevalo password was changed',
+    heading: 'Password updated',
+    message:
+      'Your Orevalo password was changed successfully. If you did not make this change, contact us immediately at hello@orevalo.com.',
+    nextUrl: '/account',
+    nextLabel: 'Open your account',
+  })
+}
+
+async function sendFormReceiptEmail(args: {
+  to: string
+  firstName: string
+  subject: string
+  heading: string
+  message: string
+  nextUrl: string
+  nextLabel: string
+}) {
+  const base = siteUrl()
+  const firstName = escapeHtml(args.firstName || 'there')
+  const heading = escapeHtml(args.heading)
+  const message = escapeHtml(args.message)
+  const nextUrl = `${base}${args.nextUrl}`
+
+  return send({
+    to: args.to,
+    subject: args.subject,
+    text: [
+      `Hi ${args.firstName || 'there'},`,
+      '',
+      args.message,
+      '',
+      `${args.nextLabel}: ${nextUrl}`,
+      '',
+      'Orevalo — Study smart. Build your future.',
+    ].join('\n'),
+    html: `
+<div style="margin:0;padding:32px 16px;background:#FAF3EC;font-family:Georgia,'Times New Roman',serif;color:#2C1A0E">
+  <div style="max-width:480px;margin:0 auto;overflow:hidden;background:#fff;border-radius:12px">
+    <div style="padding:32px 32px 24px;background:#2C1A0E;text-align:center">
+      <span style="color:#FAF3EC;font-size:24px;font-weight:bold;letter-spacing:.5px">Orevalo</span>
+    </div>
+    <div style="padding:40px 32px 24px">
+      <p style="margin:0 0 10px;color:#C4622D;font-size:13px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase">Submission received</p>
+      <h1 style="margin:0 0 16px;color:#2C1A0E;font-size:24px;line-height:1.3">${heading}, ${firstName}</h1>
+      <p style="margin:0;color:#2C1A0E;font-size:15px;line-height:1.7">${message}</p>
+    </div>
+    <div style="padding:8px 32px 40px;text-align:center">
+      <a href="${nextUrl}" style="display:inline-block;padding:14px 32px;border-radius:8px;background:#C4622D;color:#fff;font-size:15px;font-weight:bold;text-decoration:none">${escapeHtml(args.nextLabel)}</a>
+    </div>
+    <div style="padding:24px 32px;background:#FAF3EC;text-align:center">
+      <p style="margin:0;color:#8A7568;font-size:11px;line-height:1.5"><a href="${base}/privacy" style="color:#8A7568">Privacy Policy</a> · <a href="${base}/terms" style="color:#8A7568">Terms</a></p>
+    </div>
+  </div>
+</div>`.trim(),
+  })
+}
+
+export function sendLeaderApplicationReceipt(args: { to: string; firstName: string }) {
+  return sendFormReceiptEmail({
+    ...args,
+    subject: 'We received your Student Leader application',
+    heading: 'Application received',
+    message: 'Thank you for applying to the Founding Student Leaders Program. We review every application and will get back to you within 7 days.',
+    nextUrl: '/student-leaders',
+    nextLabel: 'View the program',
+  })
+}
+
+export function sendResearchReceipt(args: { to: string; firstName: string }) {
+  return sendFormReceiptEmail({
+    ...args,
+    subject: 'Thank you for helping shape Orevalo',
+    heading: 'Thank you',
+    message: 'Your research responses have been received and will help shape what Orevalo builds for African students.',
+    nextUrl: '/',
+    nextLabel: 'Return to Orevalo',
+  })
+}
+
 /**
  * Asks a new subscriber to prove they own the address.
  *

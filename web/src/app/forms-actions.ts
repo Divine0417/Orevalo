@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { isMailerConfigured, sendLeaderApplicationReceipt, sendResearchReceipt } from '@/lib/email'
 import {
   FORM_CONNECTIONS,
   FORM_COUNTRIES,
@@ -148,6 +149,9 @@ export async function submitLeaderApplication(
   }
 
   await notify('New Student Leader application — Orevalo', values)
+  if (isMailerConfigured) {
+    await sendLeaderApplicationReceipt({ to: email, firstName: fullName.split(/\s+/)[0] ?? 'there' })
+  }
   return { ok: true }
 }
 
@@ -211,6 +215,9 @@ export async function submitResearchResponse(
   }
 
   await notify('New research response — Orevalo', { ...values, answers: undefined })
+  if (isMailerConfigured) {
+    await sendResearchReceipt({ to: email, firstName: firstName.split(/\s+/)[0] ?? 'there' })
+  }
   return { ok: true }
 }
 

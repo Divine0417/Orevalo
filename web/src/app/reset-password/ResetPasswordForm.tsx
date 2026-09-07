@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser'
 import { authInput, authLabel } from '@/components/AuthShell'
+import { sendPasswordChangedNotice } from '@/app/auth-actions'
 
 type Status = 'loading' | 'ready' | 'saving' | 'done' | 'error'
 
@@ -46,12 +47,15 @@ export default function ResetPasswordForm() {
     }
 
     setStatus('saving')
-    const { error } = await createClient().auth.updateUser({ password })
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setStatus('error')
       setMessage('We could not update your password. Request a new reset link and try again.')
       return
     }
+
+    await sendPasswordChangedNotice()
     setStatus('done')
   }
 
