@@ -56,6 +56,11 @@ type ListingValues = {
   deadline: string
   apply_url: string
   published: boolean
+  description: string | null
+  source_name: string | null
+  source_url: string | null
+  verified_at: string | null
+  featured: boolean
 }
 
 /**
@@ -72,6 +77,12 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
   const deadline = String(formData.get('deadline') ?? '').trim()
   const apply_url = String(formData.get('apply_url') ?? '').trim()
   const published = formData.get('published') === 'on'
+  const description = String(formData.get('description') ?? '').trim() || null
+  const source_name = String(formData.get('source_name') ?? '').trim() || null
+  const source_url = String(formData.get('source_url') ?? '').trim() || null
+  const verifiedRaw = String(formData.get('verified_at') ?? '').trim()
+  const verified_at = verifiedRaw ? `${verifiedRaw}T00:00:00.000Z` : null
+  const featured = formData.get('featured') === 'on'
 
   if (!company || !title) return { ok: false, error: 'Company and role title are both required.' }
   if (!FIELDS.includes(field as (typeof FIELDS)[number]))
@@ -83,7 +94,8 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
   if (!/^https?:\/\//i.test(apply_url))
     return { ok: false, error: 'The apply link must start with http:// or https://' }
 
-  return { ok: true, values: { company, title, location, field, deadline, apply_url, published } }
+  if (source_url && !/^https?:\/\//i.test(source_url)) return { ok: false, error: 'The source link must start with http:// or https://' }
+  return { ok: true, values: { company, title, location, field, deadline, apply_url, published, description, source_name, source_url, verified_at, featured } }
 }
 
 async function requireAdmin() {
@@ -138,7 +150,10 @@ export async function updateListing(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('listings').update(parsed.values).eq('id', id)
+  const { error } = await supabase
+    .from('listings')
+    .update({ ...parsed.values, slug: slugify(parsed.values.company, parsed.values.title) })
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
   revalidatePath('/admin')
@@ -155,6 +170,28 @@ export async function setPublished(id: string, published: boolean): Promise<Acti
   if (error) return { ok: false, message: error.message }
 
   revalidatePath('/admin')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function setListingFeatured(id: string, featured: boolean): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase.from('listings').update({ featured }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidatePath('/admin/listings')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function archiveListing(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase.from('listings').update({ archived_at: new Date().toISOString(), published: false }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidatePath('/admin/listings')
   revalidatePath('/internships')
   return { ok: true }
 }

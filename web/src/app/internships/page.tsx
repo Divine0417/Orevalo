@@ -176,7 +176,7 @@ function ListingCard({
       </div>
 
       <h2 className="font-display text-[1.2rem] leading-[1.3] font-semibold tracking-[-0.01em]">
-        {listing.title}
+        <Link href={`/internships/${listing.id}`} className="no-underline hover:text-clay">{listing.title}</Link>
       </h2>
 
       <div className="flex flex-col gap-2 text-[0.86rem] text-muted">

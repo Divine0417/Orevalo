@@ -23,6 +23,7 @@ export default async function ScholarshipsPage({
   const { data, error } = await query
     .order('published', { ascending: false })
     .order('name', { ascending: true })
+    .limit(500)
 
   const scholarships = (data ?? []) as ScholarshipRow[]
   const missingTable = error?.code === 'PGRST205'

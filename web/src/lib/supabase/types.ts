@@ -22,14 +22,26 @@ export type ListingRow = {
   /** ISO date, YYYY-MM-DD. */
   deadline: string
   apply_url: string
+  description: string | null
+  source_name: string | null
+  source_url: string | null
+  verified_at: string | null
+  featured: boolean
+  archived_at: string | null
   published: boolean
   created_at: string
   updated_at: string
 }
 
-export type ListingInsert = Omit<ListingRow, 'id' | 'created_at' | 'updated_at'> & {
+export type ListingInsert = Omit<ListingRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at'> & {
   id?: string
   published?: boolean
+  description?: string | null
+  source_name?: string | null
+  source_url?: string | null
+  verified_at?: string | null
+  featured?: boolean
+  archived_at?: string | null
 }
 
 export type ProfileRow = {
@@ -57,14 +69,26 @@ export type ScholarshipRow = {
   deadline: string | null
   eligibility: string | null
   apply_url: string
+  description: string | null
+  source_name: string | null
+  source_url: string | null
+  verified_at: string | null
+  featured: boolean
+  archived_at: string | null
   published: boolean
   created_at: string
   updated_at: string
 }
 
-export type ScholarshipInsert = Omit<ScholarshipRow, 'id' | 'created_at' | 'updated_at'> & {
+export type ScholarshipInsert = Omit<ScholarshipRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at'> & {
   id?: string
   published?: boolean
+  description?: string | null
+  source_name?: string | null
+  source_url?: string | null
+  verified_at?: string | null
+  featured?: boolean
+  archived_at?: string | null
 }
 
 export type SubscriberRow = {
@@ -191,6 +215,7 @@ export type AlertPreferencesInsert = Omit<AlertPreferencesRow, 'created_at' | 'u
 
 export type AlertDeliveryRow = {
   id: string
+  recipient_key: string
   user_id: string | null
   subscriber_id: string | null
   kind: 'listing' | 'scholarship'
@@ -199,9 +224,27 @@ export type AlertDeliveryRow = {
   sent_at: string
 }
 
-export type AlertDeliveryInsert = Omit<AlertDeliveryRow, 'id' | 'sent_at'> & {
+export type AlertDeliveryInsert = Omit<AlertDeliveryRow, 'id' | 'sent_at' | 'recipient_key'> & {
   id?: string
   sent_at?: string
+}
+
+export type OpportunityReportRow = {
+  id: string
+  kind: 'listing' | 'scholarship'
+  opportunity_id: string
+  reason: string
+  reporter_email: string | null
+  created_at: string
+}
+
+export type OpportunityEventRow = {
+  id: string
+  kind: 'listing' | 'scholarship'
+  opportunity_id: string
+  event: 'view' | 'apply_click'
+  session_key: string | null
+  created_at: string
 }
 
 export type Database = {
@@ -259,6 +302,18 @@ export type Database = {
         Row: AlertDeliveryRow
         Insert: AlertDeliveryInsert
         Update: Partial<AlertDeliveryInsert>
+        Relationships: []
+      }
+      opportunity_reports: {
+        Row: OpportunityReportRow
+        Insert: Omit<OpportunityReportRow, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<OpportunityReportRow, 'id'>>
+        Relationships: []
+      }
+      opportunity_events: {
+        Row: OpportunityEventRow
+        Insert: Omit<OpportunityEventRow, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<OpportunityEventRow, 'id'>>
         Relationships: []
       }
     }

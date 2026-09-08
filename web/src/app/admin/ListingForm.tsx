@@ -128,6 +128,13 @@ export default function ListingForm({
         </label>
       </div>
 
+      <label className="flex flex-col gap-2"><span className={labelClass}>Description</span><textarea name="description" defaultValue={listing?.description ?? ''} className={`${inputClass} min-h-24`} /></label>
+      <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+        <label className="flex flex-col gap-2"><span className={labelClass}>Source name</span><input name="source_name" defaultValue={listing?.source_name ?? ''} placeholder="Company careers page" className={inputClass} /></label>
+        <label className="flex flex-col gap-2"><span className={labelClass}>Source link</span><input type="url" name="source_url" defaultValue={listing?.source_url ?? ''} placeholder="https://..." className={inputClass} /></label>
+        <label className="flex flex-col gap-2"><span className={labelClass}>Last verified</span><input type="date" name="verified_at" defaultValue={listing?.verified_at?.slice(0, 10) ?? ''} className={inputClass} /></label>
+      </div>
+
       <label className="flex cursor-pointer items-center gap-3 text-[0.9rem]">
         <input
           type="checkbox"
@@ -137,6 +144,7 @@ export default function ListingForm({
         />
         Visible on the public board
       </label>
+      <label className="flex cursor-pointer items-center gap-3 text-[0.9rem]"><input type="checkbox" name="featured" defaultChecked={listing?.featured ?? false} className="size-4 accent-clay" />Feature on the public board</label>
 
       {state && !state.ok && (
         <p

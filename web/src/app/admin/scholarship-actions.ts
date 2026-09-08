@@ -15,6 +15,11 @@ type ScholarshipValues = {
   eligibility: string | null
   apply_url: string
   published: boolean
+  description: string | null
+  source_name: string | null
+  source_url: string | null
+  verified_at: string | null
+  featured: boolean
 }
 
 function slugify(name: string) {
@@ -38,6 +43,12 @@ function readForm(
   const eligibility = String(formData.get('eligibility') ?? '').trim()
   const apply_url = String(formData.get('apply_url') ?? '').trim()
   const published = formData.get('published') === 'on'
+  const description = String(formData.get('description') ?? '').trim() || null
+  const source_name = String(formData.get('source_name') ?? '').trim() || null
+  const source_url = String(formData.get('source_url') ?? '').trim() || null
+  const verifiedRaw = String(formData.get('verified_at') ?? '').trim()
+  const verified_at = verifiedRaw ? `${verifiedRaw}T00:00:00.000Z` : null
+  const featured = formData.get('featured') === 'on'
 
   if (!name || !funder) return { ok: false, error: 'Name and funder are both required.' }
   if (!COUNTRIES.includes(country as (typeof COUNTRIES)[number]))
@@ -51,6 +62,8 @@ function readForm(
     return { ok: false, error: 'Deadline must be a valid date, or left blank if rolling.' }
   if (!/^https?:\/\//i.test(apply_url))
     return { ok: false, error: 'The apply link must start with http:// or https://' }
+  if (source_url && !/^https?:\/\//i.test(source_url))
+    return { ok: false, error: 'The source link must start with http:// or https://' }
 
   return {
     ok: true,
@@ -64,6 +77,11 @@ function readForm(
       eligibility: eligibility || null,
       apply_url,
       published,
+      description,
+      source_name,
+      source_url,
+      verified_at,
+      featured,
     },
   }
 }
@@ -120,7 +138,10 @@ export async function updateScholarship(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('scholarships').update(parsed.values).eq('id', id)
+  const { error } = await supabase
+    .from('scholarships')
+    .update({ ...parsed.values, slug: slugify(parsed.values.name) })
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
   revalidate()
@@ -138,6 +159,26 @@ export async function setScholarshipPublished(
   const { error } = await supabase.from('scholarships').update({ published }).eq('id', id)
   if (error) return { ok: false, message: error.message }
 
+  revalidate()
+  return { ok: true }
+}
+
+export async function setScholarshipFeatured(id: string, featured: boolean): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase.from('scholarships').update({ featured }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidate()
+  return { ok: true }
+}
+
+export async function archiveScholarship(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase.from('scholarships').update({ archived_at: new Date().toISOString(), published: false }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
   revalidate()
   return { ok: true }
 }

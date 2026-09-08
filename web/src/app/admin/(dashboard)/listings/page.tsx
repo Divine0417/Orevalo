@@ -44,6 +44,7 @@ export default async function ListingsPage({
   const { data, error } = await query
     .order('published', { ascending: false })
     .order('deadline', { ascending: true })
+    .limit(500)
 
   let listings = (data ?? []) as ListingRow[]
 

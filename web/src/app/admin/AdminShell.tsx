@@ -19,6 +19,8 @@ const SECTIONS = [
   { href: '/admin/subscribers', label: 'Subscribers', icon: Envelope },
   { href: '/admin/applications', label: 'Applications', icon: Medal },
   { href: '/admin/research', label: 'Research', icon: Document },
+  { href: '/admin/import', label: 'Import CSV', icon: Document },
+  { href: '/admin/analytics', label: 'Analytics', icon: Document },
 ]
 
 export default function AdminShell({

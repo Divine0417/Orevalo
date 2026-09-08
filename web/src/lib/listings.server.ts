@@ -13,6 +13,8 @@ import { createClient } from './supabase/server'
 import { isSupabaseConfigured } from './supabase/config'
 import { SEED, type Field, type Listing, type ListingFilters, type Location } from './listings'
 
+const PUBLIC_RESULT_LIMIT = 100
+
 /** Maps a database row to the shape the UI renders. */
 function toListing(row: {
   slug: string
@@ -35,14 +37,37 @@ function toListing(row: {
 }
 
 function filterSeed({ field, location }: ListingFilters): Listing[] {
+  const today = new Date().toISOString().slice(0, 10)
   return SEED.filter(
-    (l) => (!field || l.field === field) && (!location || l.location === location),
+    (l) =>
+      l.deadline >= today &&
+      (!field || l.field === field) &&
+      (!location || l.location === location),
   ).sort((a, b) => a.deadline.localeCompare(b.deadline))
 }
 
 export type ListingsResult = {
   listings: Listing[]
   error?: string
+}
+
+export async function getListingBySlug(slug: string, preview = false) {
+  if (!isSupabaseConfigured) return null
+
+  try {
+    const supabase = await createClient()
+    let query = supabase
+      .from('listings')
+      .select('id, slug, company, title, location, field, deadline, apply_url, description, source_name, source_url, verified_at, featured, archived_at, published')
+      .eq('slug', slug)
+    if (!preview) query = query.eq('published', true).is('archived_at', null)
+    const { data, error } = await query.maybeSingle()
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.warn('[listings] detail query failed:', error)
+    return null
+  }
 }
 
 /**
@@ -59,11 +84,16 @@ export async function getListings(filters: ListingFilters = {}): Promise<Listing
 
   try {
     const supabase = await createClient()
+    const today = new Date().toISOString().slice(0, 10)
     let query = supabase
       .from('listings')
       .select('slug, company, title, location, field, deadline, apply_url')
       .eq('published', true)
+      .is('archived_at', null)
+      .gte('deadline', today)
+      .order('featured', { ascending: false })
       .order('deadline', { ascending: true })
+      .limit(PUBLIC_RESULT_LIMIT)
 
     if (filters.field) query = query.eq('field', filters.field)
     if (filters.location) query = query.eq('location', filters.location)

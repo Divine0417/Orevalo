@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import ListingForm from './ListingForm'
-import { deleteListing, setPublished } from './actions'
+import { archiveListing, deleteListing, setListingFeatured, setPublished } from './actions'
 import { daysUntil, formatDeadline } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
 
@@ -63,6 +64,7 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
                 {remaining === 0 ? 'Closes today' : `${remaining} days left`}
               </span>
             )}
+            {listing.featured && <span className="rounded-full bg-moss/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-moss uppercase">Featured</span>}
           </div>
 
           <h3 className="font-display text-[1.1rem] font-semibold">{listing.title}</h3>
@@ -72,6 +74,7 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
+          {!listing.published && <Link href={`/internships/${listing.slug}?preview=1`} target="_blank" className="rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted no-underline hover:border-clay hover:text-clay">Preview</Link>}
           <button
             type="button"
             disabled={pending}
@@ -80,6 +83,8 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
           >
             Edit
           </button>
+          <button type="button" disabled={pending} onClick={() => run(() => setListingFeatured(listing.id, !listing.featured))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">{listing.featured ? 'Unfeature' : 'Feature'}</button>
+          {!listing.archived_at && <button type="button" disabled={pending} onClick={() => run(() => archiveListing(listing.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>}
           <button
             type="button"
             disabled={pending}

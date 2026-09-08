@@ -158,7 +158,7 @@ function ScholarshipCard({
       </div>
 
       <h2 className="font-display text-[1.2rem] leading-[1.3] font-semibold tracking-[-0.01em]">
-        {scholarship.name}
+        <Link href={`/scholarships/${scholarship.slug}`} className="no-underline hover:text-clay">{scholarship.name}</Link>
       </h2>
 
       {scholarship.eligibility && (
