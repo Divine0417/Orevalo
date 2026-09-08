@@ -105,7 +105,7 @@ export const features = [
     tone: 'bg-[#d9a234]/20 text-[#8a6412]',
     title: 'CV Builder',
     navLabel: 'CV Builder',
-    body: 'ATS-friendly templates designed for African graduates applying locally and internationally. Fill in a form, download a PDF.',
+    body: 'ATS-friendly templates designed for African graduates applying locally and internationally. Free members get 2 CV creations per month, with one edit included per CV.',
     phase: 'Phase 2',
     status: 'planned' as const,
   },
@@ -280,6 +280,8 @@ export const pricing = [
     features: [
       'Browse internships and scholarships',
       'Basic account and profile',
+      'Create up to 2 CVs per month',
+      'Edit each CV once per month',
       'Save a limited number of opportunities',
       'Apply through the original provider links',
     ],
@@ -293,6 +295,7 @@ export const pricing = [
       'Everything in Free',
       'Unlimited saves and application tracking',
       'Personalised alerts and deadline reminders',
+      'More CV creations and edits',
       'Early access and member pricing',
     ],
   },
@@ -303,7 +306,8 @@ export const pricing = [
     highlight: false,
     features: [
       'Everything in Plus',
-      'CV builder and export',
+      'Unlimited CV creations and edits',
+      'CV export',
       'Tailored cover letters',
       'Advanced matching',
       'AI tutor when available',
@@ -318,7 +322,7 @@ export const faqs = [
   },
   {
     q: 'Is Orevalo free to use?',
-    a: 'Yes. Orevalo is free during launch. Plus members will get early access to personalised alerts and application tracking at NGN 1,000 per month. Premium will follow at NGN 2,000 per month with the full career and AI tools. There is no payment available today.',
+    a: 'Yes. The Free tier includes 2 CV creations per month, with one edit included per CV. A second edit uses another creation slot. Plus members will get expanded CV access, personalised alerts and application tracking at NGN 1,000 per month. Premium will follow at NGN 2,000 per month with unlimited CV creation, export and the full career and AI tools. There is no payment available today.',
   },
   {
     q: 'What is actually available today?',
