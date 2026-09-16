@@ -265,6 +265,7 @@ In **Authentication → URL Configuration**, set the Site URL to the production 
 
 ```text
 https://orevalo.vercel.app
+http://orevalo-lime.vercel.app/
 ```
 
 Add these redirect URLs:

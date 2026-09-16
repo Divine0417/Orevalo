@@ -121,32 +121,6 @@ export async function sendWelcomeEmail(args: { to: string; firstName: string }) 
   })
 }
 
-export function sendPasswordResetRequestedEmail(args: { to: string }) {
-  return sendFormReceiptEmail({
-    ...args,
-    firstName: 'there',
-    subject: 'Password reset requested — Orevalo',
-    heading: 'Reset request received',
-    message:
-      'We received a request to reset the password for this email address. If it belongs to an Orevalo account, Supabase has sent a separate password reset link. If you did not make this request, you can safely ignore this message.',
-    nextUrl: '/login',
-    nextLabel: 'Return to sign in',
-  })
-}
-
-export function sendPasswordChangedEmail(args: { to: string; firstName?: string }) {
-  return sendFormReceiptEmail({
-    to: args.to,
-    firstName: args.firstName ?? 'there',
-    subject: 'Your Orevalo password was changed',
-    heading: 'Password updated',
-    message:
-      'Your Orevalo password was changed successfully. If you did not make this change, contact us immediately at hello@orevalo.com.',
-    nextUrl: '/account',
-    nextLabel: 'Open your account',
-  })
-}
-
 async function sendFormReceiptEmail(args: {
   to: string
   firstName: string
