@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser'
 import { authInput, authLabel } from '@/components/AuthShell'
-import { sendPasswordChangedNotice } from '@/app/auth-actions'
 
 type Status = 'loading' | 'ready' | 'saving' | 'done' | 'error'
 
@@ -55,7 +54,6 @@ export default function ResetPasswordForm() {
       return
     }
 
-    await sendPasswordChangedNotice()
     setStatus('done')
   }
 
