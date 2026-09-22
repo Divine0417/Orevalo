@@ -23,10 +23,10 @@ This work extends the existing system:
 | --- | --- | --- |
 | Manual CSV import | Done | `src/app/admin/(dashboard)/import/page.tsx` and `src/app/admin/import-actions.ts` accept CSV files and insert `published: false`. |
 | Manual admin entry | Done | Existing listing and scholarship forms continue to work. |
-| Pending storage | Partial | `published: false` acts as hidden/pending today, but there is no explicit status, rejection reason, or review history. |
-| Pending filter | Partial | The admin listings page has an `All` and `Hidden` filter, but no `Pending` label or scraper-specific review view. |
-| Approve action | Partial | `setPublished` can publish a record, but the review workflow is not presented as Approve/Reject and has no rejection reason. |
-| Automatic source ingestion | Missing | No scraper, source registry, scheduled ingestion route, or external fetch pipeline exists. |
+| Pending storage | Done | `status`, `rejection_reason`, and legacy `published` values are migrated by `0012_review_status.sql`. |
+| Pending filter | Done | Internship and scholarship admin pages have explicit Pending, Rejected, Archived, and Live views. |
+| Approve action | Done | Approve publishes and unarchives; Reject records a reason; archived rows have a separate Unarchive action that returns them to Pending. |
+| Automatic source ingestion | In progress | `scripts/scrape-opportunities.mjs` provides a dry-run/source-agnostic HTML and JSON-LD scraper. A source-specific adapter and scheduled job remain. |
 | Link and content verification | Missing | Import validates URL shape only. There is no automated HTTP check, scam-keyword scan, or near-duplicate check. |
 | Source attribution | Partial | `source_name` and `source_url` columns exist and are shown on detail pages, but automated source records do not exist. |
 | Admin pending notification | Missing | The current alert cron emails students about published opportunities and deadlines; it does not notify the team about pending records. |
@@ -73,6 +73,8 @@ Before changing the schema, decide whether to migrate from `published` to `statu
 
 ### 2. Build the Pending queue before the scraper
 
+**Completed:** The admin pages now separate active review from archived records. Archived rows are hidden from normal views, listed under an Archived tab, and restored with Unarchive rather than Approve. The scraper below inserts only Pending rows.
+
 Add a clearly labeled Pending view to both admin opportunity tabs. Each row should show:
 
 - Title, organization, deadline, and source
@@ -85,6 +87,8 @@ Add a clearly labeled Pending view to both admin opportunity tabs. Each row shou
 Reject should accept an optional reason. Approval should change the record to Published and revalidate the public board. Rejection should keep the record out of public queries and remain visible in a review history or rejected filter.
 
 ### 3. Add a source registry and technical audit
+
+**Still required:** No source has been selected or approved yet. The scraper is deliberately configurable until the first source audit confirms its URL, format, rate limits, and terms.
 
 Start with one source, not the whole list. Record for each source:
 
@@ -111,6 +115,16 @@ Initial source candidates:
 The first source should be selected after a quick audit for stable, permitted, structured content. Prefer a source with static HTML or a documented feed. Use a browser automation tool only when necessary for a JavaScript-rendered page.
 
 ### 4. Build one end-to-end ingestion job
+
+**Implemented baseline:** Run the source-agnostic scraper with `npm run scrape -- --url <source-url> --kind listing|scholarship --source-name <name>`. Add `--dry-run` first. It fetches with a timeout and user agent, extracts JSON-LD or semantic article blocks, normalizes dates and URLs, rejects malformed rows, deduplicates against the source page and existing database rows, and inserts new rows as `published: false`, `status: pending`.
+
+Example audit run:
+
+```bash
+npm run scrape -- --url https://example.com/opportunities --kind listing --source-name "Example source" --dry-run
+```
+
+**Still required:** Choose and audit a real source, add selectors/adapter logic where generic extraction is insufficient, add persistent run logs, link checks, notifications, and scheduling. Do not run a write without `SUPABASE_SERVICE_ROLE_KEY` configured.
 
 The first scraper should:
 

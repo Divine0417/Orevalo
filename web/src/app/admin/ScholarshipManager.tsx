@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import Modal from './Modal'
-import { approveScholarship, archiveScholarship, createScholarship, deleteScholarship, rejectScholarship, setScholarshipFeatured, setScholarshipPublished, updateScholarship } from './scholarship-actions'
+import { approveScholarship, archiveScholarship, createScholarship, deleteScholarship, rejectScholarship, setScholarshipFeatured, setScholarshipPublished, unarchiveScholarship, updateScholarship } from './scholarship-actions'
 import type { ActionResult } from './actions'
 import { COUNTRIES, DEGREE_LEVELS, SCHOLARSHIP_FIELDS } from '@/lib/scholarships'
 import { formatDeadline } from '@/lib/listings'
@@ -94,7 +94,7 @@ export function ScholarshipRowItem({ scholarship }: { scholarship: ScholarshipRo
         {!scholarship.published && <a href={`/scholarships/${scholarship.slug}?preview=1`} target="_blank" rel="noreferrer" className="rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted no-underline hover:border-clay hover:text-clay">Preview</a>}
         <button type="button" disabled={pending} onClick={() => setEditing(true)} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Edit</button>
         <button type="button" disabled={pending} onClick={() => run(() => setScholarshipFeatured(scholarship.id, !scholarship.featured))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">{scholarship.featured ? 'Unfeature' : 'Feature'}</button>
-        {!scholarship.published ? (
+        {!scholarship.published && !scholarship.archived_at ? (
           <>
             <button type="button" disabled={pending} onClick={() => run(() => approveScholarship(scholarship.id))} className="cursor-pointer rounded-full bg-moss px-4 py-2 text-[0.82rem] font-bold text-white disabled:cursor-not-allowed">Approve</button>
             {rejecting ? (
@@ -131,7 +131,7 @@ export function ScholarshipRowItem({ scholarship }: { scholarship: ScholarshipRo
         ) : (
           <button type="button" disabled={pending} onClick={() => run(() => setScholarshipPublished(scholarship.id, !scholarship.published))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Hide</button>
         )}
-        {!scholarship.archived_at && <button type="button" disabled={pending} onClick={() => run(() => archiveScholarship(scholarship.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>}
+        {scholarship.archived_at ? <button type="button" disabled={pending} onClick={() => run(() => unarchiveScholarship(scholarship.id))} className="cursor-pointer rounded-full bg-moss px-4 py-2 text-[0.82rem] font-bold text-white disabled:cursor-not-allowed">Unarchive</button> : <button type="button" disabled={pending} onClick={() => run(() => archiveScholarship(scholarship.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>}
         {confirming ? <span className="flex items-center gap-2"><button type="button" disabled={pending} onClick={() => run(() => deleteScholarship(scholarship.id))} className="cursor-pointer rounded-full bg-[#8b3a1a] px-4 py-2 text-[0.82rem] font-bold text-white disabled:cursor-not-allowed">Delete for good</button><button type="button" onClick={() => setConfirming(false)} className="cursor-pointer text-[0.82rem] font-semibold text-muted hover:text-ink">Cancel</button></span> : <button type="button" disabled={pending} onClick={() => setConfirming(true)} className="cursor-pointer rounded-full border-[1.5px] border-[#e07a50]/50 px-4 py-2 text-[0.82rem] font-semibold text-[#8b3a1a] hover:border-[#8b3a1a] disabled:cursor-not-allowed">Delete</button>}
       </div>
     </div>

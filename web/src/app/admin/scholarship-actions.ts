@@ -226,6 +226,19 @@ export async function archiveScholarship(id: string): Promise<ActionResult> {
   return { ok: true }
 }
 
+export async function unarchiveScholarship(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('scholarships')
+    .update({ archived_at: null, published: false, status: 'pending', rejection_reason: null })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidate()
+  return { ok: true }
+}
+
 export async function deleteScholarship(id: string): Promise<ActionResult> {
   const denied = await requireAdmin()
   if (denied) return { ok: false, message: denied }

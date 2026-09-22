@@ -6,13 +6,14 @@ import { createClient } from '@/lib/supabase/server'
 import { daysUntil } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
 
-type Status = 'all' | 'live' | 'pending' | 'rejected' | 'soon' | 'expired'
+type Status = 'all' | 'live' | 'pending' | 'rejected' | 'archived' | 'soon' | 'expired'
 
 const STATUSES: { value: Status; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'live', label: 'Live' },
   { value: 'pending', label: 'Pending review' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'archived', label: 'Archived' },
   { value: 'soon', label: 'Closing soon' },
   { value: 'expired', label: 'Expired' },
 ]
@@ -42,6 +43,8 @@ export default async function ListingsPage({
   if (status === 'live') query = query.eq('published', true)
   if (status === 'pending') query = query.eq('published', false).or('status.is.null,status.eq.pending')
   if (status === 'rejected') query = query.eq('status', 'rejected')
+  if (status === 'archived') query = query.not('archived_at', 'is', null)
+  if (status !== 'archived') query = query.is('archived_at', null)
 
   const { data, error } = await query
     .order('published', { ascending: false })

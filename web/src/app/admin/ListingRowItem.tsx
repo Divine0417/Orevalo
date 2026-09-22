@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import ListingForm from './ListingForm'
-import { approveListing, archiveListing, deleteListing, rejectListing, setListingFeatured, setPublished } from './actions'
+import { approveListing, archiveListing, deleteListing, rejectListing, setListingFeatured, setPublished, unarchiveListing } from './actions'
 import { daysUntil, formatDeadline } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
 
@@ -86,8 +86,12 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
             Edit
           </button>
           <button type="button" disabled={pending} onClick={() => run(() => setListingFeatured(listing.id, !listing.featured))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">{listing.featured ? 'Unfeature' : 'Feature'}</button>
-          {!listing.archived_at && <button type="button" disabled={pending} onClick={() => run(() => archiveListing(listing.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>}
-          {!listing.published ? (
+          {listing.archived_at ? (
+            <button type="button" disabled={pending} onClick={() => run(() => unarchiveListing(listing.id))} className="cursor-pointer rounded-full bg-moss px-4 py-2 text-[0.82rem] font-bold text-white disabled:cursor-not-allowed">Unarchive</button>
+          ) : (
+            <button type="button" disabled={pending} onClick={() => run(() => archiveListing(listing.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>
+          )}
+          {!listing.published && !listing.archived_at ? (
             <>
               <button
                 type="button"

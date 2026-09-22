@@ -241,6 +241,20 @@ export async function archiveListing(id: string): Promise<ActionResult> {
   return { ok: true }
 }
 
+export async function unarchiveListing(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('listings')
+    .update({ archived_at: null, published: false, status: 'pending', rejection_reason: null })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidatePath('/admin/listings')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
 export async function deleteListing(id: string): Promise<ActionResult> {
   const denied = await requireAdmin()
   if (denied) return { ok: false, message: denied }
