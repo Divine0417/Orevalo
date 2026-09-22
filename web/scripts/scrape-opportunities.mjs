@@ -128,6 +128,64 @@ function headingFrom(block) {
   return match ? cleanText(decodeHtml(match[1])) : ''
 }
 
+function htmlText(html) {
+  return cleanText(decodeHtml(html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')))
+}
+
+function linksToPath(html, sourceUrl, pattern) {
+  return [...html.matchAll(/href=["']([^"']+)["']/gi)]
+    .map((match) => ({ url: absoluteUrl(decodeHtml(match[1]), sourceUrl), text: '' }))
+    .filter((link) => pattern.test(link.url))
+}
+
+function dateAfterLabel(text, label) {
+  const match = text.match(new RegExp(`${label}[^\\n]{0,100}?((?:\\d{4}-\\d{2}-\\d{2})|(?:[A-Za-z]{3,9} \\d{1,2},? \\d{4}))`, 'i'))
+  return isoDate(match?.[1])
+}
+
+async function fetchPage(url) {
+  const response = await fetch(url, {
+    headers: {
+      'user-agent': process.env.SCRAPER_USER_AGENT ?? DEFAULT_USER_AGENT,
+      accept: 'text/html,application/xhtml+xml,application/json',
+    },
+    signal: AbortSignal.timeout(20_000),
+  })
+  if (!response.ok) throw new Error(`Source returned HTTP ${response.status} for ${url}.`)
+  return response.text()
+}
+
+async function extractMyJobMagListings(indexHtml, sourceUrl) {
+  const detailLinks = [...new Map(linksToPath(indexHtml, sourceUrl, /\/job\//i).map((link) => [link.url, link])).values()]
+  const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
+  const records = []
+  for (const link of detailLinks.slice(0, limit)) {
+    try {
+      const detailHtml = await fetchPage(link.url)
+      const text = htmlText(detailHtml)
+      const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
+      const title = firstString(headingFrom(detailHtml), pageTitle.split(/\s+at\s+/i)[0], link.text)
+      const company = pageTitle.match(/\s+at\s+(.+?)(?:\s+September,?\s+\d{4}|\s+\|\s+MyJobMag)?$/i)?.[1]?.trim() ?? ''
+      const locationLine = text.match(/Location\s+(.{2,160}?)(?:Job Field|Salary|Posted:|Deadline:)/i)?.[1] ?? text
+      const fieldLine = text.match(/Job Field\s+(.{2,120}?)(?:Salary|Industry|About the Opportunity|Posted:|Deadline:)/i)?.[1] ?? text
+      const deadline = isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
+      if (!company || !title || !deadline) continue
+      records.push({
+        company,
+        title: title.replace(/\s+at\s+.+$/i, '').trim(),
+        location: inferLocation(locationLine),
+        field: inferField(fieldLine),
+        deadline,
+        apply_url: link.url,
+        description: text.slice(0, 4000),
+      })
+    } catch (error) {
+      console.warn(`[scraper] skipped MyJobMag detail ${link.url}: ${error.message}`)
+    }
+  }
+  return records
+}
+
 function extractListingObjects(html, sourceUrl) {
   const records = []
   for (const item of jsonLdValues(html)) {
@@ -229,10 +287,13 @@ async function main() {
   const sourceName = args['source-name']
   if (!sourceUrl || !['listing', 'scholarship'].includes(kind) || !sourceName) throw new Error('Provide --url, --kind listing|scholarship, and --source-name. Use --help for details.')
 
-  const response = await fetch(sourceUrl, { headers: { 'user-agent': process.env.SCRAPER_USER_AGENT ?? DEFAULT_USER_AGENT, accept: 'text/html,application/xhtml+xml,application/json' }, signal: AbortSignal.timeout(20_000) })
-  if (!response.ok) throw new Error(`Source returned HTTP ${response.status}.`)
-  const html = await response.text()
-  const extracted = kind === 'listing' ? extractListingObjects(html, sourceUrl) : extractScholarshipObjects(html, sourceUrl)
+  const html = await fetchPage(sourceUrl)
+  const isMyJobMag = new URL(sourceUrl).hostname.endsWith('myjobmag.com') && kind === 'listing'
+  const extracted = isMyJobMag
+    ? await extractMyJobMagListings(html, sourceUrl)
+    : kind === 'listing'
+      ? extractListingObjects(html, sourceUrl)
+      : extractScholarshipObjects(html, sourceUrl)
   const unique = new Map()
   for (const record of extracted) if (validate(record, kind)) unique.set(`${record.apply_url}|${kind}`, toInsert(record, kind, sourceName, sourceUrl))
   const records = [...unique.values()]

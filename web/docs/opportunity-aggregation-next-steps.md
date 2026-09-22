@@ -26,7 +26,7 @@ This work extends the existing system:
 | Pending storage | Done | `status`, `rejection_reason`, and legacy `published` values are migrated by `0012_review_status.sql`. |
 | Pending filter | Done | Internship and scholarship admin pages have explicit Pending, Rejected, Archived, and Live views. |
 | Approve action | Done | Approve publishes and unarchives; Reject records a reason; archived rows have a separate Unarchive action that returns them to Pending. |
-| Automatic source ingestion | In progress | `scripts/scrape-opportunities.mjs` provides a dry-run/source-agnostic HTML and JSON-LD scraper. A source-specific adapter and scheduled job remain. |
+| Automatic source ingestion | In progress | `scripts/scrape-all.mjs` runs the enabled source registry sequentially with a delay; MyJobMag now has a bounded detail-page adapter, and every run defaults to dry-run. Scheduled runs, persistent logs, link checks, and notifications remain. |
 | Link and content verification | Missing | Import validates URL shape only. There is no automated HTTP check, scam-keyword scan, or near-duplicate check. |
 | Source attribution | Partial | `source_name` and `source_url` columns exist and are shown on detail pages, but automated source records do not exist. |
 | Admin pending notification | Missing | The current alert cron emails students about published opportunities and deadlines; it does not notify the team about pending records. |
@@ -116,7 +116,7 @@ The first source should be selected after a quick audit for stable, permitted, s
 
 ### 4. Build one end-to-end ingestion job
 
-**Implemented baseline:** Run the source-agnostic scraper with `npm run scrape -- --url <source-url> --kind listing|scholarship --source-name <name>`. Add `--dry-run` first. It fetches with a timeout and user agent, extracts JSON-LD or semantic article blocks, normalizes dates and URLs, rejects malformed rows, deduplicates against the source page and existing database rows, and inserts new rows as `published: false`, `status: pending`.
+**Implemented baseline:** Run all enabled sources with `npm run scrape:all`. It defaults to dry-run, fetches sources sequentially with a delay, extracts JSON-LD or semantic article blocks, normalizes dates and URLs, rejects malformed rows, deduplicates against existing database rows, and inserts new rows as `published: false`, `status: pending` only when explicitly run with `npm run scrape:all -- --write`. Individual sources remain available through `npm run scrape -- --url <source-url> --kind listing|scholarship --source-name <name> --dry-run`.
 
 Example audit run:
 
@@ -125,6 +125,8 @@ npm run scrape -- --url https://example.com/opportunities --kind listing --sourc
 ```
 
 **Still required:** Choose and audit a real source, add selectors/adapter logic where generic extraction is insufficient, add persistent run logs, link checks, notifications, and scheduling. Do not run a write without `SUPABASE_SERVICE_ROLE_KEY` configured.
+
+The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria and Scholars4Dev are enabled for dry-run auditing. MyJobMag detail extraction has been verified against three live pages, producing two valid candidates. Scholars4Dev currently yields incomplete index records and needs a detail-page adapter before writes. Jobberman is disabled because its current public URL redirects to a tracking endpoint; it must be audited before activation.
 
 The first scraper should:
 
