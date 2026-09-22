@@ -170,15 +170,9 @@ export async function setPublished(id: string, published: boolean): Promise<Acti
 
   const supabase = await createClient()
   const nextStatus = normalizeReviewStatus({ published })
-  const updatePayload: Record<string, unknown> = {
-    published,
-    status: nextStatus,
-    rejection_reason: published ? null : undefined,
-  }
-
-  if (published) {
-    updatePayload.archived_at = null
-  }
+  const updatePayload = published
+    ? { published, status: nextStatus, rejection_reason: null, archived_at: null }
+    : { published, status: nextStatus }
 
   const { error } = await supabase
     .from('listings')
