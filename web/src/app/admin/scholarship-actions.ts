@@ -160,9 +160,19 @@ export async function setScholarshipPublished(
 
   const supabase = await createClient()
   const nextStatus = normalizeReviewStatus({ published })
+  const updatePayload: Record<string, unknown> = {
+    published,
+    status: nextStatus,
+    rejection_reason: published ? null : undefined,
+  }
+
+  if (published) {
+    updatePayload.archived_at = null
+  }
+
   const { error } = await supabase
     .from('scholarships')
-    .update({ published, status: nextStatus, rejection_reason: published ? null : undefined })
+    .update(updatePayload)
     .eq('id', id)
   if (error) return { ok: false, message: error.message }
 

@@ -10,7 +10,7 @@ describe('normalizeReviewStatus', () => {
   })
 
   it('turns approval and rejection into public visibility fields', () => {
-    expect(composeReviewUpdate('approved')).toEqual({ published: true, status: 'published' })
+    expect(composeReviewUpdate('approved')).toEqual({ published: true, status: 'published', archived_at: null })
     expect(composeReviewUpdate('rejected', 'broken link')).toEqual({
       published: false,
       status: 'rejected',

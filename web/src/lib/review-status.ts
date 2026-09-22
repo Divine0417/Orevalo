@@ -30,9 +30,10 @@ export function composeReviewUpdate(
   published: boolean
   status: ReviewStatus
   rejection_reason?: string | null
+  archived_at?: string | null
 } {
   if (action === 'approved') {
-    return { published: true, status: 'published' }
+    return { published: true, status: 'published', archived_at: null }
   }
 
   return {
