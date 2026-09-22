@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { daysUntil } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
 
-type Status = 'all' | 'live' | 'hidden' | 'soon' | 'expired'
+type Status = 'all' | 'live' | 'pending' | 'rejected' | 'soon' | 'expired'
 
 const STATUSES: { value: Status; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'live', label: 'Live' },
-  { value: 'hidden', label: 'Hidden' },
+  { value: 'pending', label: 'Pending review' },
+  { value: 'rejected', label: 'Rejected' },
   { value: 'soon', label: 'Closing soon' },
   { value: 'expired', label: 'Expired' },
 ]
@@ -39,7 +40,8 @@ export default async function ListingsPage({
     query = query.or(`company.ilike.${term},title.ilike.${term}`)
   }
   if (status === 'live') query = query.eq('published', true)
-  if (status === 'hidden') query = query.eq('published', false)
+  if (status === 'pending') query = query.eq('published', false).or('status.is.null,status.eq.pending')
+  if (status === 'rejected') query = query.eq('status', 'rejected')
 
   const { data, error } = await query
     .order('published', { ascending: false })
@@ -58,6 +60,9 @@ export default async function ListingsPage({
   }
   if (status === 'expired') {
     listings = listings.filter((l) => daysUntil(l.deadline) < 0)
+  }
+  if (status === 'pending') {
+    listings = listings.filter((l) => !l.published && (l.status === 'pending' || l.status == null))
   }
 
   return (

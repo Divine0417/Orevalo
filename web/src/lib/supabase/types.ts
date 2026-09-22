@@ -12,6 +12,8 @@
 
 export type UserRole = 'student' | 'admin'
 
+export type ReviewStatus = 'pending' | 'published' | 'rejected' | 'archived'
+
 export type ListingRow = {
   id: string
   slug: string
@@ -29,13 +31,17 @@ export type ListingRow = {
   featured: boolean
   archived_at: string | null
   published: boolean
+  status: ReviewStatus | null
+  rejection_reason: string | null
   created_at: string
   updated_at: string
 }
 
-export type ListingInsert = Omit<ListingRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at'> & {
+export type ListingInsert = Omit<ListingRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at' | 'status' | 'rejection_reason'> & {
   id?: string
   published?: boolean
+  status?: ReviewStatus | null
+  rejection_reason?: string | null
   description?: string | null
   source_name?: string | null
   source_url?: string | null
@@ -76,13 +82,17 @@ export type ScholarshipRow = {
   featured: boolean
   archived_at: string | null
   published: boolean
+  status: ReviewStatus | null
+  rejection_reason: string | null
   created_at: string
   updated_at: string
 }
 
-export type ScholarshipInsert = Omit<ScholarshipRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at'> & {
+export type ScholarshipInsert = Omit<ScholarshipRow, 'id' | 'created_at' | 'updated_at' | 'description' | 'source_name' | 'source_url' | 'verified_at' | 'featured' | 'archived_at' | 'status' | 'rejection_reason'> & {
   id?: string
   published?: boolean
+  status?: ReviewStatus | null
+  rejection_reason?: string | null
   description?: string | null
   source_name?: string | null
   source_url?: string | null

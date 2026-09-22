@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {
   AddScholarshipPanel,
   ScholarshipRowItem,
@@ -6,12 +7,22 @@ import {
 import SearchBox from '../../SearchBox'
 import { createClient } from '@/lib/supabase/server'
 
+type Status = 'all' | 'live' | 'pending' | 'rejected'
+
+const STATUSES: { value: Status; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'live', label: 'Live' },
+  { value: 'pending', label: 'Pending review' },
+  { value: 'rejected', label: 'Rejected' },
+]
+
 export default async function ScholarshipsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; status?: string }>
 }) {
-  const { q = '' } = await searchParams
+  const { q = '', status: rawStatus = 'all' } = await searchParams
+  const status = (STATUSES.some((s) => s.value === rawStatus) ? rawStatus : 'all') as Status
 
   const supabase = await createClient()
   let query = supabase.from('scholarships').select('*')
@@ -19,13 +30,20 @@ export default async function ScholarshipsPage({
     const term = `%${q.trim()}%`
     query = query.or(`name.ilike.${term},funder.ilike.${term}`)
   }
+  if (status === 'live') query = query.eq('published', true)
+  if (status === 'pending') query = query.eq('published', false).or('status.is.null,status.eq.pending')
+  if (status === 'rejected') query = query.eq('status', 'rejected')
 
   const { data, error } = await query
     .order('published', { ascending: false })
     .order('name', { ascending: true })
     .limit(500)
 
-  const scholarships = (data ?? []) as ScholarshipRow[]
+  const scholarships = ((data ?? []) as ScholarshipRow[]).filter((item) => {
+    if (status === 'pending') return !item.published && (item.status === 'pending' || item.status == null)
+    if (status === 'rejected') return item.status === 'rejected'
+    return true
+  })
   const missingTable = error?.code === 'PGRST205'
 
   return (
@@ -57,9 +75,33 @@ export default async function ScholarshipsPage({
           <SearchBox
             basePath="/admin/scholarships"
             defaultValue={q}
+            keep={status === 'all' ? {} : { status }}
             placeholder="Search name or funder..."
             label="Search scholarships"
           />
+
+          <nav className="mb-6 flex flex-wrap gap-2">
+            {STATUSES.map(({ value, label }) => {
+              const params = new URLSearchParams()
+              if (q) params.set('q', q)
+              if (value !== 'all') params.set('status', value)
+              const href = `/admin/scholarships${params.size ? `?${params}` : ''}`
+
+              return (
+                <Link
+                  key={value}
+                  href={href}
+                  className={`rounded-full px-4 py-1.5 text-[0.82rem] font-semibold no-underline transition-colors ${
+                    status === value
+                      ? 'bg-ink text-cream'
+                      : 'border-[1.5px] border-line bg-white text-muted hover:border-clay hover:text-clay'
+                  }`}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </nav>
 
           {error && (
             <p

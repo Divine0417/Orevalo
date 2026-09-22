@@ -3,13 +3,15 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import ListingForm from './ListingForm'
-import { archiveListing, deleteListing, setListingFeatured, setPublished } from './actions'
+import { approveListing, archiveListing, deleteListing, rejectListing, setListingFeatured, setPublished } from './actions'
 import { daysUntil, formatDeadline } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
 
 export default function ListingRowItem({ listing }: { listing: ListingRow }) {
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -51,7 +53,7 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
             </span>
             {!listing.published && (
               <span className="rounded-full bg-ink/8 px-2.5 py-0.5 text-[0.68rem] font-bold tracking-[0.06em] text-muted uppercase">
-                Hidden
+                {listing.status === 'rejected' ? 'Rejected' : listing.status === 'pending' ? 'Pending review' : 'Hidden'}
               </span>
             )}
             {expired && (
@@ -73,7 +75,7 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           {!listing.published && <Link href={`/internships/${listing.slug}?preview=1`} target="_blank" className="rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted no-underline hover:border-clay hover:text-clay">Preview</Link>}
           <button
             type="button"
@@ -85,14 +87,73 @@ export default function ListingRowItem({ listing }: { listing: ListingRow }) {
           </button>
           <button type="button" disabled={pending} onClick={() => run(() => setListingFeatured(listing.id, !listing.featured))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">{listing.featured ? 'Unfeature' : 'Feature'}</button>
           {!listing.archived_at && <button type="button" disabled={pending} onClick={() => run(() => archiveListing(listing.id))} className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted hover:border-clay hover:text-clay disabled:cursor-not-allowed">Archive</button>}
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(() => setPublished(listing.id, !listing.published))}
-            className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted transition-colors hover:border-clay hover:text-clay disabled:cursor-not-allowed"
-          >
-            {listing.published ? 'Hide' : 'Publish'}
-          </button>
+          {!listing.published ? (
+            <>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(() => approveListing(listing.id))}
+                className="cursor-pointer rounded-full bg-moss px-4 py-2 text-[0.82rem] font-bold text-white disabled:cursor-not-allowed"
+              >
+                Approve
+              </button>
+              {rejecting ? (
+                <span className="flex items-center gap-2 rounded-full border border-line bg-white px-2 py-1.5">
+                  <input
+                    value={rejectReason}
+                    onChange={(event) => setRejectReason(event.target.value)}
+                    placeholder="Short reason"
+                    className="w-36 rounded-full border border-line bg-cream px-3 py-1.5 text-[0.76rem] outline-none focus:border-clay"
+                  />
+                  <button
+                    type="button"
+                    disabled={pending || !rejectReason.trim()}
+                    onClick={() => {
+                      const reason = rejectReason.trim()
+                      if (!reason) {
+                        setError('Add a short reason before rejecting.')
+                        return
+                      }
+                      run(() => rejectListing(listing.id, reason))
+                      setRejecting(false)
+                      setRejectReason('')
+                    }}
+                    className="cursor-pointer rounded-full bg-[#8b3a1a] px-3 py-1.5 text-[0.76rem] font-bold text-white disabled:cursor-not-allowed"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRejecting(false)
+                      setRejectReason('')
+                    }}
+                    className="cursor-pointer text-[0.76rem] font-semibold text-muted hover:text-ink"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setRejecting(true)}
+                  className="cursor-pointer rounded-full border-[1.5px] border-[#e07a50]/50 px-4 py-2 text-[0.82rem] font-semibold text-[#8b3a1a] hover:border-[#8b3a1a] disabled:cursor-not-allowed"
+                >
+                  Reject
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => setPublished(listing.id, !listing.published))}
+              className="cursor-pointer rounded-full border-[1.5px] border-line px-4 py-2 text-[0.82rem] font-semibold text-muted transition-colors hover:border-clay hover:text-clay disabled:cursor-not-allowed"
+            >
+              Hide
+            </button>
+          )}
 
           {confirming ? (
             <span className="flex items-center gap-2">

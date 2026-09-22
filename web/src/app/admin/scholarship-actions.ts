@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
 import type { ActionResult } from './actions'
 import { COUNTRIES, DEGREE_LEVELS, SCHOLARSHIP_FIELDS } from '@/lib/scholarships'
+import { composeReviewUpdate, normalizeReviewStatus } from '@/lib/review-status'
 
 type ScholarshipValues = {
   name: string
@@ -108,9 +109,10 @@ export async function createScholarship(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('scholarships')
-    .insert({ ...parsed.values, slug: slugify(parsed.values.name) })
+    .insert({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.name) })
 
   if (error) {
     return {
@@ -138,9 +140,10 @@ export async function updateScholarship(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('scholarships')
-    .update({ ...parsed.values, slug: slugify(parsed.values.name) })
+    .update({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.name) })
     .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
@@ -156,7 +159,43 @@ export async function setScholarshipPublished(
   if (denied) return { ok: false, message: denied }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('scholarships').update({ published }).eq('id', id)
+  const nextStatus = normalizeReviewStatus({ published })
+  const { error } = await supabase
+    .from('scholarships')
+    .update({ published, status: nextStatus, rejection_reason: published ? null : undefined })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidate()
+  return { ok: true }
+}
+
+export async function approveScholarship(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('approved')
+  const { error } = await supabase
+    .from('scholarships')
+    .update({ ...reviewUpdate, rejection_reason: null })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidate()
+  return { ok: true }
+}
+
+export async function rejectScholarship(id: string, reason: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('rejected', reason)
+  const { error } = await supabase
+    .from('scholarships')
+    .update(reviewUpdate)
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
   revalidate()

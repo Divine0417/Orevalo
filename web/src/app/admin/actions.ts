@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
 import { FIELDS, LOCATIONS } from '@/lib/listings'
+import { composeReviewUpdate, normalizeReviewStatus } from '@/lib/review-status'
 
 export type ActionResult = { ok: true } | { ok: false; message: string }
 
@@ -117,9 +118,10 @@ export async function createListing(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('listings')
-    .insert({ ...parsed.values, slug: slugify(parsed.values.company, parsed.values.title) })
+    .insert({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.company, parsed.values.title) })
 
   if (error) {
     return {
@@ -150,9 +152,10 @@ export async function updateListing(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('listings')
-    .update({ ...parsed.values, slug: slugify(parsed.values.company, parsed.values.title) })
+    .update({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.company, parsed.values.title) })
     .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
@@ -166,10 +169,48 @@ export async function setPublished(id: string, published: boolean): Promise<Acti
   if (denied) return { ok: false, message: denied }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('listings').update({ published }).eq('id', id)
+  const nextStatus = normalizeReviewStatus({ published })
+  const { error } = await supabase
+    .from('listings')
+    .update({ published, status: nextStatus, rejection_reason: published ? null : undefined })
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
   revalidatePath('/admin')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function approveListing(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('approved')
+  const { error } = await supabase
+    .from('listings')
+    .update({ ...reviewUpdate, rejection_reason: null })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidatePath('/admin/listings')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function rejectListing(id: string, reason: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('rejected', reason)
+  const { error } = await supabase
+    .from('listings')
+    .update(reviewUpdate)
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidatePath('/admin/listings')
   revalidatePath('/internships')
   return { ok: true }
 }
