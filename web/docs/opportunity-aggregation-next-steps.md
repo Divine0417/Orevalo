@@ -26,7 +26,7 @@ This work extends the existing system:
 | Pending storage | Done | `status`, `rejection_reason`, and legacy `published` values are migrated by `0012_review_status.sql`. |
 | Pending filter | Done | Internship and scholarship admin pages have explicit Pending, Rejected, Archived, and Live views. |
 | Approve action | Done | Approve publishes and unarchives; Reject records a reason; archived rows have a separate Unarchive action that returns them to Pending. |
-| Automatic source ingestion | In progress | `scripts/scrape-all.mjs` runs the enabled source registry sequentially with a delay; MyJobMag now has a bounded detail-page adapter, and every run defaults to dry-run. Scheduled runs, persistent logs, link checks, and notifications remain. |
+| Automatic source ingestion | In progress | `scripts/scrape-all.mjs` runs the enabled source registry sequentially with a delay, and `/api/cron/scrape` is scheduled daily on Vercel. MyJobMag has a bounded detail-page adapter; cron defaults to dry-run. Persistent logs, link checks, notifications, and the Scholars4Dev detail adapter remain. |
 | Link and content verification | Missing | Import validates URL shape only. There is no automated HTTP check, scam-keyword scan, or near-duplicate check. |
 | Source attribution | Partial | `source_name` and `source_url` columns exist and are shown on detail pages, but automated source records do not exist. |
 | Admin pending notification | Missing | The current alert cron emails students about published opportunities and deadlines; it does not notify the team about pending records. |
@@ -127,6 +127,8 @@ npm run scrape -- --url https://example.com/opportunities --kind listing --sourc
 **Still required:** Choose and audit a real source, add selectors/adapter logic where generic extraction is insufficient, add persistent run logs, link checks, notifications, and scheduling. Do not run a write without `SUPABASE_SERVICE_ROLE_KEY` configured.
 
 The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria and Scholars4Dev are enabled for dry-run auditing. MyJobMag detail extraction has been verified against three live pages, producing two valid candidates. Scholars4Dev currently yields incomplete index records and needs a detail-page adapter before writes. Jobberman is disabled because its current public URL redirects to a tracking endpoint; it must be audited before activation.
+
+The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` configured. Keep `SCRAPER_CRON_WRITE` unset or set to `false` while auditing; set it to `true` only when pending-only inserts are ready. The route never publishes records.
 
 The first scraper should:
 

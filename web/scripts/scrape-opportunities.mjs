@@ -279,13 +279,8 @@ function toInsert(record, kind, sourceName, sourceUrl) {
   }
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2))
-  if (args.help) return printHelp()
-  const sourceUrl = args.url
-  const kind = args.kind
-  const sourceName = args['source-name']
-  if (!sourceUrl || !['listing', 'scholarship'].includes(kind) || !sourceName) throw new Error('Provide --url, --kind listing|scholarship, and --source-name. Use --help for details.')
+export async function scrapeSource({ sourceUrl, kind, sourceName, dryRun = false }) {
+  if (!sourceUrl || !['listing', 'scholarship'].includes(kind) || !sourceName) throw new Error('Provide sourceUrl, kind listing|scholarship, and sourceName.')
 
   const html = await fetchPage(sourceUrl)
   const isMyJobMag = new URL(sourceUrl).hostname.endsWith('myjobmag.com') && kind === 'listing'
@@ -297,8 +292,8 @@ async function main() {
   const unique = new Map()
   for (const record of extracted) if (validate(record, kind)) unique.set(`${record.apply_url}|${kind}`, toInsert(record, kind, sourceName, sourceUrl))
   const records = [...unique.values()]
-  console.log(JSON.stringify({ source: sourceName, url: sourceUrl, kind, extracted: extracted.length, valid: records.length, dryRun: Boolean(args.dryRun) }, null, 2))
-  if (args.dryRun || records.length === 0) return
+  const summary = { source: sourceName, url: sourceUrl, kind, extracted: extracted.length, valid: records.length, dryRun }
+  if (dryRun || records.length === 0) return summary
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -309,13 +304,19 @@ async function main() {
   if (existingError) throw existingError
   const known = new Set((existing ?? []).flatMap((row) => [row.slug, row.apply_url]))
   const fresh = records.filter((record) => !known.has(record.slug) && !known.has(record.apply_url))
-  if (fresh.length === 0) return console.log(JSON.stringify({ inserted: 0, duplicates: records.length }, null, 2))
+  if (fresh.length === 0) return { ...summary, inserted: 0, duplicates: records.length }
   const { error } = await supabase.from(table).insert(fresh)
   if (error) throw error
-  console.log(JSON.stringify({ inserted: fresh.length, duplicates: records.length - fresh.length, status: 'pending' }, null, 2))
+  return { ...summary, inserted: fresh.length, duplicates: records.length - fresh.length, status: 'pending' }
 }
 
-main().catch((error) => {
-  console.error(`[scraper] ${error.message}`)
-  process.exitCode = 1
-})
+if (import.meta.url === `file://${process.argv[1].replaceAll('\\', '/')}`) {
+  const args = parseArgs(process.argv.slice(2))
+  if (args.help) printHelp()
+  else scrapeSource({ sourceUrl: args.url, kind: args.kind, sourceName: args['source-name'], dryRun: Boolean(args.dryRun) })
+    .then((summary) => console.log(JSON.stringify(summary, null, 2)))
+    .catch((error) => {
+      console.error(`[scraper] ${error.message}`)
+      process.exitCode = 1
+    })
+}
