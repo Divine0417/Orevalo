@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // The cron is dry-run unless explicitly enabled in deployment settings.
-    const dryRun = process.env.SCRAPER_CRON_WRITE !== 'true'
+    // Cron imports are pending-only. Set this explicitly while auditing sources.
+    const dryRun = process.env.SCRAPER_CRON_DRY_RUN === 'true'
     const { scrapeSource } = await import('../../../../../scripts/scrape-opportunities.mjs')
     const results = []
 
@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
     }
 
     const failed = results.filter((result) => 'error' in result)
-    return NextResponse.json({ ok: failed.length === 0, dryRun, results }, { status: failed.length ? 502 : 200 })
+    const inserted = results.reduce((total, result) => total + ('inserted' in result ? Number(result.inserted ?? 0) : 0), 0)
+    return NextResponse.json({ ok: failed.length === 0, dryRun, inserted, results }, { status: failed.length ? 502 : 200 })
   } catch (error) {
     console.error('[scrape-cron] failed:', error)
     return NextResponse.json({ error: 'Scraper job failed' }, { status: 500 })

@@ -128,7 +128,7 @@ npm run scrape -- --url https://example.com/opportunities --kind listing --sourc
 
 The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria and Scholars4Dev are enabled for dry-run auditing. MyJobMag detail extraction has been verified against three live pages, producing two valid candidates. Scholars4Dev currently yields incomplete index records and needs a detail-page adapter before writes. Jobberman is disabled because its current public URL redirects to a tracking endpoint; it must be audited before activation.
 
-The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` configured. Keep `SCRAPER_CRON_WRITE` unset or set to `false` while auditing; set it to `true` only when pending-only inserts are ready. The route never publishes records.
+The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` configured. The route writes new records as Pending by default; set `SCRAPER_CRON_DRY_RUN=true` to audit without inserts. The route never publishes records and reports the total `inserted` count in its response.
 
 The first scraper should:
 
