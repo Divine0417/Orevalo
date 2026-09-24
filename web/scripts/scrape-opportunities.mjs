@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { pathToFileURL } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 
 const DEFAULT_USER_AGENT = 'OrevaloOpportunityBot/1.0 (+https://orevalo.com/contact)'
@@ -303,14 +304,19 @@ export async function scrapeSource({ sourceUrl, kind, sourceName, dryRun = false
   const { data: existing, error: existingError } = await supabase.from(table).select('slug, apply_url')
   if (existingError) throw existingError
   const known = new Set((existing ?? []).flatMap((row) => [row.slug, row.apply_url]))
-  const fresh = records.filter((record) => !known.has(record.slug) && !known.has(record.apply_url))
+  const fresh = records.filter((record) => {
+    if (known.has(record.slug) || known.has(record.apply_url)) return false
+    known.add(record.slug)
+    known.add(record.apply_url)
+    return true
+  })
   if (fresh.length === 0) return { ...summary, inserted: 0, duplicates: records.length }
   const { error } = await supabase.from(table).insert(fresh)
   if (error) throw error
   return { ...summary, inserted: fresh.length, duplicates: records.length - fresh.length, status: 'pending' }
 }
 
-if (import.meta.url === `file://${process.argv[1].replaceAll('\\', '/')}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) printHelp()
   else scrapeSource({ sourceUrl: args.url, kind: args.kind, sourceName: args['source-name'], dryRun: Boolean(args.dryRun) })
