@@ -6,6 +6,8 @@ import { getListingBySlug } from '@/lib/listings.server'
 import { formatDeadline } from '@/lib/listings'
 import OpportunityActions from '@/components/OpportunityActions'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const listing = await getListingBySlug(slug)
@@ -16,7 +18,7 @@ export default async function InternshipDetail({ params, searchParams }: { param
   const { slug } = await params
   const { preview } = await searchParams
   const { isAdmin } = await getCurrentUser()
-  const listing = await getListingBySlug(slug, Boolean(preview && isAdmin))
+  const listing = await getListingBySlug(slug, preview === '1' && isAdmin)
   if (!listing) notFound()
 
   return <main className="mx-auto max-w-[760px] px-5 py-12">

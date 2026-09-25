@@ -6,6 +6,8 @@ import { getScholarshipBySlug } from '@/lib/scholarships.server'
 import { formatDeadline } from '@/lib/listings'
 import OpportunityActions from '@/components/OpportunityActions'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const scholarship = await getScholarshipBySlug(slug)
@@ -16,7 +18,7 @@ export default async function ScholarshipDetail({ params, searchParams }: { para
   const { slug } = await params
   const { preview } = await searchParams
   const { isAdmin } = await getCurrentUser()
-  const scholarship = await getScholarshipBySlug(slug, Boolean(preview && isAdmin))
+  const scholarship = await getScholarshipBySlug(slug, preview === '1' && isAdmin)
   if (!scholarship) notFound()
 
   return <main className="mx-auto max-w-[760px] px-5 py-12">
