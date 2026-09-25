@@ -187,6 +187,46 @@ async function extractMyJobMagListings(indexHtml, sourceUrl) {
   return records
 }
 
+async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
+  const detailLinks = [...new Map(linksToPath(indexHtml, sourceUrl, /scholars4dev\.com\/\d+\//i).map((link) => [link.url, link])).values()]
+  const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
+  const records = []
+
+  for (const link of detailLinks.slice(0, limit)) {
+    try {
+      const detailHtml = await fetchPage(link.url)
+      const text = htmlText(detailHtml)
+      const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
+      const name = firstString(headingFrom(detailHtml), pageTitle.replace(/\s*[|–-]\s*Scholarships?\s*for\s*Development.*$/i, ''), link.text)
+      const deadline = isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
+      const studyIn = text.match(/Study in:\s*([^\r\n]+)/i)?.[1] ?? text
+      const summaryLine = text.match(/\b([^\r\n]{2,120})\s+(?:Bachelors?|Masters?|PhD|Doctoral)[^\r\n]*/i)?.[1] ?? ''
+      const degreeLevel = inferDegree(text)
+      const funder = cleanText(summaryLine).replace(/\s+(?:Bachelors?|Masters?|PhD|Doctoral).*$/i, '')
+      const externalLinks = [...new Set([...detailHtml.matchAll(/href=["']([^"']+)["']/gi)]
+        .map((match) => absoluteUrl(decodeHtml(match[1]), link.url))
+        .filter((url) => /^https?:\/\//i.test(url) && !/scholars4dev\.com|awin1\.com/i.test(url)))]
+      const applyUrl = externalLinks.find((url) => /apply|admission|scholar|university|\.edu(?:\.|\/)/i.test(url)) ?? externalLinks[0] ?? ''
+
+      if (!name || !funder || !deadline || !applyUrl) continue
+      records.push({
+        name,
+        funder,
+        country: inferCountry(studyIn),
+        field: SCHOLARSHIP_FIELDS.find((field) => field !== 'Any' && text.toLowerCase().includes(field.toLowerCase())) ?? 'Any',
+        degree_level: degreeLevel,
+        deadline,
+        eligibility: text.match(/Eligibility:\s*([\s\S]{0,1200}?)(?:Application instructions:|Website:|Disclaimer:)/i)?.[1]?.trim() ?? null,
+        apply_url: applyUrl,
+        description: text.slice(0, 4000),
+      })
+    } catch (error) {
+      console.warn(`[scraper] skipped Scholars4Dev detail ${link.url}: ${error.message}`)
+    }
+  }
+  return records
+}
+
 function extractListingObjects(html, sourceUrl) {
   const records = []
   for (const item of jsonLdValues(html)) {
@@ -284,9 +324,13 @@ export async function scrapeSource({ sourceUrl, kind, sourceName, dryRun = false
   if (!sourceUrl || !['listing', 'scholarship'].includes(kind) || !sourceName) throw new Error('Provide sourceUrl, kind listing|scholarship, and sourceName.')
 
   const html = await fetchPage(sourceUrl)
-  const isMyJobMag = new URL(sourceUrl).hostname.endsWith('myjobmag.com') && kind === 'listing'
+  const hostname = new URL(sourceUrl).hostname
+  const isMyJobMag = hostname.endsWith('myjobmag.com') && kind === 'listing'
+  const isScholars4Dev = hostname.endsWith('scholars4dev.com') && kind === 'scholarship'
   const extracted = isMyJobMag
     ? await extractMyJobMagListings(html, sourceUrl)
+    : isScholars4Dev
+      ? await extractScholars4DevScholarships(html, sourceUrl)
     : kind === 'listing'
       ? extractListingObjects(html, sourceUrl)
       : extractScholarshipObjects(html, sourceUrl)
