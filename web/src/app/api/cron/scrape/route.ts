@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SCRAPER_SOURCES } from '../../../../../scripts/scraper-sources.mjs'
+import { isMailerConfigured, sendScraperPendingEmail, siteUrl } from '@/lib/email'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,7 +29,22 @@ export async function GET(request: NextRequest) {
 
     const failed = results.filter((result) => 'error' in result)
     const inserted = results.reduce((total, result) => total + ('inserted' in result ? Number(result.inserted ?? 0) : 0), 0)
-    return NextResponse.json({ ok: failed.length === 0, dryRun, inserted, results }, { status: failed.length ? 502 : 200 })
+    let notified = false
+    const adminEmail = process.env.SCRAPER_ADMIN_EMAIL
+    if (!dryRun && inserted > 0 && isMailerConfigured && adminEmail) {
+      notified = await sendScraperPendingEmail({
+        to: adminEmail,
+        inserted,
+        sources: results
+          .filter((result) => 'inserted' in result)
+          .map((result) => ({ source: result.source, inserted: Number(result.inserted ?? 0) })),
+        reviewUrls: {
+          listings: `${siteUrl()}/admin/listings?status=pending`,
+          scholarships: `${siteUrl()}/admin/scholarships?status=pending`,
+        },
+      })
+    }
+    return NextResponse.json({ ok: failed.length === 0, dryRun, inserted, notified, results }, { status: failed.length ? 502 : 200 })
   } catch (error) {
     console.error('[scrape-cron] failed:', error)
     return NextResponse.json({ error: 'Scraper job failed' }, { status: 500 })

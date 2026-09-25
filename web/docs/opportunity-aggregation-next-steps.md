@@ -128,7 +128,7 @@ npm run scrape -- --url https://example.com/opportunities --kind listing --sourc
 
 The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria and Scholars4Dev remain enabled for scheduled scraping. MyJobMag detail extraction and the Scholars4Dev index-card adapter are implemented and verified; the first live Scholars4Dev write inserted 9 Pending scholarships. The remaining documented sources are registered but disabled until their URLs, terms, and extraction fields are audited: NGCareers, Jobberman, Opportunity Desk, Mastercard Foundation, Tony Elumelu Foundation, UNILAG, University of Ibadan, Covenant University, Dangote, MTN Nigeria, Flutterwave, PwC Nigeria, Access Bank, GTBank, and Zenith Bank.
 
-The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` configured. The route writes new records as Pending by default; set `SCRAPER_CRON_DRY_RUN=true` to audit without inserts. The route never publishes records and reports the total `inserted` count in its response.
+The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, and `SCRAPER_ADMIN_EMAIL` configured. When new rows are inserted, the route emails `SCRAPER_ADMIN_EMAIL` with the source counts and pending review link. It does not email on dry runs or duplicate-only runs. The route writes new records as Pending by default; set `SCRAPER_CRON_DRY_RUN=true` to audit without inserts. The route never publishes records and reports `inserted` and `notified` in its response.
 
 The first scraper should:
 
