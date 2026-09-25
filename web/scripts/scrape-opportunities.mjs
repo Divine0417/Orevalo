@@ -63,7 +63,8 @@ function isoDate(value) {
   if (!value) return null
   const match = String(value).match(/\d{4}-\d{2}-\d{2}/)
   if (match) return match[0]
-  const parsed = Date.parse(String(value))
+  const readable = String(value).match(/\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}/)?.[0] ?? String(value)
+  const parsed = Date.parse(readable)
   if (Number.isNaN(parsed)) return null
   return new Date(parsed).toISOString().slice(0, 10)
 }
@@ -140,7 +141,7 @@ function linksToPath(html, sourceUrl, pattern) {
 }
 
 function dateAfterLabel(text, label) {
-  const match = text.match(new RegExp(`${label}[^\\n]{0,100}?((?:\\d{4}-\\d{2}-\\d{2})|(?:[A-Za-z]{3,9} \\d{1,2},? \\d{4}))`, 'i'))
+  const match = text.match(new RegExp(`${label}[^\\n]{0,100}?((?:\\d{4}-\\d{2}-\\d{2})|(?:\\d{1,2} [A-Za-z]{3,9} \\d{4})|(?:[A-Za-z]{3,9} \\d{1,2},? \\d{4}))`, 'i'))
   return isoDate(match?.[1])
 }
 
@@ -188,27 +189,21 @@ async function extractMyJobMagListings(indexHtml, sourceUrl) {
 }
 
 async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
-  const detailLinks = [...new Map(linksToPath(indexHtml, sourceUrl, /scholars4dev\.com\/\d+\//i).map((link) => [link.url, link])).values()]
+  const cards = [...indexHtml.matchAll(/<h2[^>]*>\s*<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>([\s\S]*?)(?=<h2\b|$)/gi)]
   const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
   const records = []
 
-  for (const link of detailLinks.slice(0, limit)) {
+  for (const match of cards.slice(0, limit)) {
     try {
-      const detailHtml = await fetchPage(link.url)
-      const text = htmlText(detailHtml)
-      const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
-      const name = firstString(headingFrom(detailHtml), pageTitle.replace(/\s*[|–-]\s*Scholarships?\s*for\s*Development.*$/i, ''), link.text)
-      const deadline = isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
+      const name = cleanText(decodeHtml(match[2]))
+      const detailUrl = absoluteUrl(decodeHtml(match[1]), sourceUrl)
+      const text = htmlText(match[0])
+      const deadline = isoDate(match[0].match(/Deadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
       const studyIn = text.match(/Study in:\s*([^\r\n]+)/i)?.[1] ?? text
       const summaryLine = text.match(/\b([^\r\n]{2,120})\s+(?:Bachelors?|Masters?|PhD|Doctoral)[^\r\n]*/i)?.[1] ?? ''
       const degreeLevel = inferDegree(text)
-      const funder = cleanText(summaryLine).replace(/\s+(?:Bachelors?|Masters?|PhD|Doctoral).*$/i, '')
-      const externalLinks = [...new Set([...detailHtml.matchAll(/href=["']([^"']+)["']/gi)]
-        .map((match) => absoluteUrl(decodeHtml(match[1]), link.url))
-        .filter((url) => /^https?:\/\//i.test(url) && !/scholars4dev\.com|awin1\.com/i.test(url)))]
-      const applyUrl = externalLinks.find((url) => /apply|admission|scholar|university|\.edu(?:\.|\/)/i.test(url)) ?? externalLinks[0] ?? ''
-
-      if (!name || !funder || !deadline || !applyUrl) continue
+      const funder = cleanText(summaryLine.replace(name, '').replace(/\s+(?:Bachelors?|Masters?|PhD|Doctoral).*$/i, ''))
+      if (!name || !funder || !deadline || !detailUrl) continue
       records.push({
         name,
         funder,
@@ -216,8 +211,8 @@ async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
         field: SCHOLARSHIP_FIELDS.find((field) => field !== 'Any' && text.toLowerCase().includes(field.toLowerCase())) ?? 'Any',
         degree_level: degreeLevel,
         deadline,
-        eligibility: text.match(/Eligibility:\s*([\s\S]{0,1200}?)(?:Application instructions:|Website:|Disclaimer:)/i)?.[1]?.trim() ?? null,
-        apply_url: applyUrl,
+        eligibility: null,
+        apply_url: detailUrl,
         description: text.slice(0, 4000),
       })
     } catch (error) {
