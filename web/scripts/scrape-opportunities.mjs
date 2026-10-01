@@ -9,6 +9,13 @@ const LISTING_LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Other']
 const SCHOLARSHIP_COUNTRIES = ['Pan-African', 'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other']
 const SCHOLARSHIP_FIELDS = ['Any', 'Engineering', 'Business', 'Technology', 'Finance', 'Healthcare']
 const DEGREE_LEVELS = ['Any', 'Undergraduate', 'Masters', 'PhD']
+const LISTING_FIELD_KEYWORDS = {
+  Engineering: ['engineering', 'technical', 'civil', 'mechanical', 'electrical', 'construction', 'site engineering', 'oil and gas', 'energy', 'mining', 'manufacturing', 'shipping', 'aerospace', 'architectural'],
+  Healthcare: ['healthcare', 'medical', 'pharmaceutical', 'nurse', 'doctor', 'clinical', 'hospital', 'clinic', 'caregiver', 'health'],
+  Finance: ['finance', 'account', 'audit', 'banking', 'business analysis', 'insurance', 'treasury', 'risk management', 'compliance', 'procurement', 'storekeeping', 'supply chain'],
+  Business: ['business', 'sales', 'marketing', 'management', 'operations', 'human resources', 'hr', 'project management', 'customer care', 'consultancy', 'administration', 'logistics', 'strategic', 'product management', 'communications', 'public relations'],
+  Technology: ['technology', 'software', 'ai', 'artificial intelligence', 'data', 'ict', 'computer', 'digital', 'product', 'design', 'ux', 'creative', 'media production', 'filmmaker', 'grok', 'capcut', 'programming', 'cybersecurity', 'analytics', 'editorial'],
+}
 
 function parseArgs(argv) {
   const args = {}
@@ -96,13 +103,23 @@ function locationText(value) {
   return firstString(value?.name, value?.address?.addressLocality, value?.address?.addressRegion, value?.address?.addressCountry)
 }
 
-function inferField(text) {
-  const lower = text.toLowerCase()
-  return LISTING_FIELDS.find((field) => lower.includes(field.toLowerCase())) ?? 'Other'
+export function inferField(text) {
+  const lower = String(text ?? '').toLowerCase()
+  if (!lower) return 'Other'
+  for (const field of LISTING_FIELDS) {
+    const keywords = LISTING_FIELD_KEYWORDS[field] ?? []
+    if (keywords.some((keyword) => lower.includes(keyword))) return field
+  }
+  if (lower.includes('remote') || lower.includes('telecommute') || lower.includes('online')) return 'Technology'
+  return 'Other'
 }
 
-function inferLocation(text) {
-  const lower = text.toLowerCase()
+export function inferLocation(text) {
+  const lower = String(text ?? '').toLowerCase()
+  if (!lower) return 'Other'
+  if (/(remote|telecommute|work from home|online)/i.test(lower)) return 'Remote'
+  if (/\blagos\b/i.test(lower)) return 'Lagos'
+  if (/\babuja\b|federal capital/i.test(lower)) return 'Abuja'
   return LISTING_LOCATIONS.find((location) => lower.includes(location.toLowerCase())) ?? 'Other'
 }
 
@@ -157,6 +174,52 @@ async function fetchPage(url) {
   return response.text()
 }
 
+export function extractMyJobMagListing(detailHtml, sourceUrl) {
+  const text = htmlText(detailHtml)
+  const jobPosting = jsonLdValues(detailHtml).find((item) => item?.['@type'] === 'JobPosting') ?? null
+  const jobDescription = jobPosting?.description ?? text
+  const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
+  const title = firstString(
+    jobPosting?.title,
+    headingFrom(detailHtml),
+    pageTitle.split(/\s+at\s+/i)[0],
+    pageTitle.replace(/\s+\|\s+MyJobMag.*$/i, '')
+  )
+  const company = firstString(
+    jobPosting?.hiringOrganization?.name,
+    jobPosting?.hiringOrganization,
+    pageTitle.match(/\s+at\s+(.+?)(?:\s+[A-Z][a-z]+,?\s+\d{4}\s+\|\s+MyJobMag|\s+\|\s+MyJobMag)?$/i)?.[1],
+    text.match(/(?:company|organization)\s*[:\-]\s*([A-Za-z0-9 &.,()/-]{2,120})/i)?.[1],
+    ''
+  )
+  const structuredLocation = locationText(jobPosting?.jobLocation)
+  const locationLine = firstString(structuredLocation, text.match(/Location\s+(.{2,160}?)(?:Job Field|Salary|Posted:|Deadline:)/i)?.[1], text)
+  const fieldLine = firstString(
+    jobPosting?.occupationalCategory,
+    jobPosting?.industry,
+    text.match(/Job Field\s+(.{2,120}?)(?:Salary|Industry|About the Opportunity|Posted:|Deadline:)/i)?.[1],
+    text
+  )
+  const deadline = isoDate(jobPosting?.validThrough) ?? isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
+  const description = cleanText(decodeHtml(jobDescription)).slice(0, 4000)
+  const normalizedTitle = title.replace(/\s+at\s+.+$/i, '').trim()
+  const normalizedCompany = company.replace(/\s+\|\s+MyJobMag.*$/i, '').trim()
+
+  if (!normalizedCompany || !normalizedTitle || !deadline || /send this job to a friend|myjobmag|nigeria jobs - \d+\+ jobs posted daily/i.test(`${normalizedTitle} ${normalizedCompany} ${description}`)) {
+    return null
+  }
+
+  return {
+    company: normalizedCompany,
+    title: normalizedTitle,
+    location: inferLocation(`${locationLine} ${jobPosting?.jobLocationType ?? ''}`),
+    field: inferField(`${fieldLine} ${jobPosting?.occupationalCategory ?? ''} ${jobPosting?.industry ?? ''} ${normalizedTitle} ${description}`),
+    deadline,
+    apply_url: absoluteUrl(firstString(jobPosting?.url, jobPosting?.sameAs, sourceUrl), sourceUrl),
+    description,
+  }
+}
+
 async function extractMyJobMagListings(indexHtml, sourceUrl) {
   const detailLinks = [...new Map(linksToPath(indexHtml, sourceUrl, /\/job\//i).map((link) => [link.url, link])).values()]
   const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
@@ -164,23 +227,9 @@ async function extractMyJobMagListings(indexHtml, sourceUrl) {
   for (const link of detailLinks.slice(0, limit)) {
     try {
       const detailHtml = await fetchPage(link.url)
-      const text = htmlText(detailHtml)
-      const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
-      const title = firstString(headingFrom(detailHtml), pageTitle.split(/\s+at\s+/i)[0], link.text)
-      const company = pageTitle.match(/\s+at\s+(.+?)(?:\s+September,?\s+\d{4}|\s+\|\s+MyJobMag)?$/i)?.[1]?.trim() ?? ''
-      const locationLine = text.match(/Location\s+(.{2,160}?)(?:Job Field|Salary|Posted:|Deadline:)/i)?.[1] ?? text
-      const fieldLine = text.match(/Job Field\s+(.{2,120}?)(?:Salary|Industry|About the Opportunity|Posted:|Deadline:)/i)?.[1] ?? text
-      const deadline = isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
-      if (!company || !title || !deadline) continue
-      records.push({
-        company,
-        title: title.replace(/\s+at\s+.+$/i, '').trim(),
-        location: inferLocation(locationLine),
-        field: inferField(fieldLine),
-        deadline,
-        apply_url: link.url,
-        description: text.slice(0, 4000),
-      })
+      const record = extractMyJobMagListing(detailHtml, link.url)
+      if (!record) continue
+      records.push({ ...record, apply_url: link.url })
     } catch (error) {
       console.warn(`[scraper] skipped MyJobMag detail ${link.url}: ${error.message}`)
     }
