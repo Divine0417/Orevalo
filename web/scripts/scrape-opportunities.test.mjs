@@ -77,7 +77,7 @@ describe('MyJobMag extraction', () => {
               "occupationalCategory": "Media Production and Entertainment",
               "jobLocationType": "TELECOMMUTE",
               "jobLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressLocality": "All", "addressRegion": "All", "addressCountry": "NG" } },
-              "description": "<p>We are looking for an experienced AI filmmaker.</p>"
+              "description": "<p>Job Vacancies at Fatibobo Mini Films Ltd for AI Filmmaker in Nigeria. MyJobMag</p>"
             }
           </script>
         </body>

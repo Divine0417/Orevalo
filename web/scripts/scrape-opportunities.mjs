@@ -205,8 +205,9 @@ export function extractMyJobMagListing(detailHtml, sourceUrl) {
   const description = cleanText(decodeHtml(jobDescription)).slice(0, 4000)
   const normalizedTitle = title.replace(/\s+at\s+.+$/i, '').trim()
   const normalizedCompany = company.replace(/\s+\|\s+MyJobMag.*$/i, '').trim()
+  const sharePrompt = /send this job to a friend|send this to a friend|share this job/i.test(String(likelyHeader || ''))
 
-  if (!normalizedCompany || !normalizedTitle || !deadline || /send this job to a friend|myjobmag|nigeria jobs - \d+\+ jobs posted daily/i.test(`${normalizedTitle} ${normalizedCompany} ${description}`)) {
+  if (!normalizedCompany || !normalizedTitle || !deadline || sharePrompt) {
     return null
   }
 
