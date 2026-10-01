@@ -179,9 +179,10 @@ export function extractMyJobMagListing(detailHtml, sourceUrl) {
   const jobPosting = jsonLdValues(detailHtml).find((item) => item?.['@type'] === 'JobPosting') ?? null
   const jobDescription = jobPosting?.description ?? text
   const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
+  const likelyHeader = headingFrom(detailHtml)
   const title = firstString(
     jobPosting?.title,
-    headingFrom(detailHtml),
+    likelyHeader && !/send this job to a friend|send this to a friend|share this job/i.test(likelyHeader) ? likelyHeader : '',
     pageTitle.split(/\s+at\s+/i)[0],
     pageTitle.replace(/\s+\|\s+MyJobMag.*$/i, '')
   )

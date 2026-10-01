@@ -56,4 +56,36 @@ describe('MyJobMag extraction', () => {
     expect(inferField('Senior Project Manager - Sales & Marketing')).toBe('Business')
     expect(inferField('Finance and Accounts Officer')).toBe('Finance')
   })
+
+  it('ignores the MyJobMag share-widget heading when choosing the job title', () => {
+    const html = `
+      <html>
+        <head>
+          <title>AI Filmmaker at Fatibobo Mini Films Ltd October, 2026 | MyJobMag</title>
+        </head>
+        <body>
+          <h3>Send this job to a friend</h3>
+          <script type="application/ld+json">
+            {
+              "@context": "http://schema.org",
+              "@type": "JobPosting",
+              "title": "AI Filmmaker",
+              "datePosted": "2026-10-01T10:00:54+01:00",
+              "validThrough": "2026-10-15T00:00:00+0000",
+              "hiringOrganization": { "@type": "Organization", "name": "Fatibobo Mini Films Ltd" },
+              "industry": "Creative / Arts",
+              "occupationalCategory": "Media Production and Entertainment",
+              "jobLocationType": "TELECOMMUTE",
+              "jobLocation": { "@type": "Place", "address": { "@type": "PostalAddress", "addressLocality": "All", "addressRegion": "All", "addressCountry": "NG" } },
+              "description": "<p>We are looking for an experienced AI filmmaker.</p>"
+            }
+          </script>
+        </body>
+      </html>
+    `
+
+    const record = extractMyJobMagListing(html, 'https://www.myjobmag.com/job/ai-filmmaker-fatibobo-mini-films-ltd')
+
+    expect(record.title).toBe('AI Filmmaker')
+  })
 })
