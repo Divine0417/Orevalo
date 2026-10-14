@@ -7,6 +7,7 @@ import type { ActionResult } from './actions'
 import { COUNTRIES, DEGREE_LEVELS, SCHOLARSHIP_FIELDS } from '@/lib/scholarships'
 import { formatDeadline } from '@/lib/listings'
 import type { ScholarshipRow as ScholarshipRowType } from '@/lib/supabase/types'
+import { formatRequirementInput, scholarshipRequirements } from '@/lib/opportunity-requirements'
 
 export type ScholarshipRow = ScholarshipRowType
 
@@ -41,6 +42,7 @@ function ScholarshipForm({ scholarship, onDone }: { scholarship?: ScholarshipRow
         <label className="flex flex-col gap-2"><span className={labelClass}>Deadline (optional)</span><input type="date" name="deadline" defaultValue={scholarship?.deadline ?? ''} className={inputClass} /></label>
         <label className="col-span-2 flex flex-col gap-2 max-sm:col-span-1"><span className={labelClass}>Description</span><textarea name="description" defaultValue={scholarship?.description ?? ''} className={`${inputClass} min-h-24`} /></label>
         <label className="col-span-2 flex flex-col gap-2 max-sm:col-span-1"><span className={labelClass}>Eligibility</span><textarea name="eligibility" defaultValue={scholarship?.eligibility ?? ''} className={`${inputClass} min-h-24`} /></label>
+        <label className="col-span-2 flex flex-col gap-2 max-sm:col-span-1"><span className={labelClass}>Structured requirements</span><textarea name="requirements" defaultValue={scholarship ? formatRequirementInput(scholarshipRequirements(scholarship)) : ''} placeholder={'Nationality: Open to citizens of eligible countries\nExperience: At least two years'} className={`${inputClass} min-h-28`} /></label>
         <label className="flex flex-col gap-2"><span className={labelClass}>Source name</span><input name="source_name" defaultValue={scholarship?.source_name ?? ''} className={inputClass} /></label>
         <label className="flex flex-col gap-2"><span className={labelClass}>Source link</span><input type="url" name="source_url" defaultValue={scholarship?.source_url ?? ''} placeholder="https://..." className={inputClass} /></label>
         <label className="flex flex-col gap-2"><span className={labelClass}>Last verified</span><input type="date" name="verified_at" defaultValue={scholarship?.verified_at?.slice(0, 10) ?? ''} className={inputClass} /></label>

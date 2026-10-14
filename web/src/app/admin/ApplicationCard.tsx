@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { setApplicationStatus } from './application-actions'
 import type { LeaderApplicationRow } from '@/lib/supabase/types'
 
@@ -27,6 +27,12 @@ export default function ApplicationCard({
   const [status, setStatus] = useState(application.status)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [now, setNow] = useState<number | null>(null)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setNow(Date.now()), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   function change(next: LeaderApplicationRow['status']) {
     setError(null)
@@ -41,9 +47,7 @@ export default function ApplicationCard({
     })
   }
 
-  const days = Math.floor(
-    (Date.now() - Date.parse(application.created_at)) / 86_400_000,
-  )
+  const days = now === null ? 0 : Math.floor((now - Date.parse(application.created_at)) / 86_400_000)
   // The programme page promises a reply within 7 days.
   const overdue = status === 'new' && days > 7
 

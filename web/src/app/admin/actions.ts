@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
 import { FIELDS, LOCATIONS } from '@/lib/listings'
 import { composeReviewUpdate, normalizeReviewStatus } from '@/lib/review-status'
+import { parseRequirementInput, type OpportunityRequirement } from '@/lib/opportunity-requirements'
 
 export type ActionResult = { ok: true } | { ok: false; message: string }
 
@@ -56,6 +57,7 @@ type ListingValues = {
   field: string
   deadline: string
   apply_url: string
+  requirements: OpportunityRequirement[]
   published: boolean
   description: string | null
   source_name: string | null
@@ -77,6 +79,7 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
   const field = String(formData.get('field') ?? '').trim()
   const deadline = String(formData.get('deadline') ?? '').trim()
   const apply_url = String(formData.get('apply_url') ?? '').trim()
+  const requirements = parseRequirementInput(formData.get('requirements'))
   const published = formData.get('published') === 'on'
   const description = String(formData.get('description') ?? '').trim() || null
   const source_name = String(formData.get('source_name') ?? '').trim() || null
@@ -96,7 +99,7 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
     return { ok: false, error: 'The apply link must start with http:// or https://' }
 
   if (source_url && !/^https?:\/\//i.test(source_url)) return { ok: false, error: 'The source link must start with http:// or https://' }
-  return { ok: true, values: { company, title, location, field, deadline, apply_url, published, description, source_name, source_url, verified_at, featured } }
+  return { ok: true, values: { company, title, location, field, deadline, apply_url, requirements, published, description, source_name, source_url, verified_at, featured } }
 }
 
 async function requireAdmin() {

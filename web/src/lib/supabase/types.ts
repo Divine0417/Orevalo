@@ -10,6 +10,8 @@
  * type-check the project.
  */
 
+import type { OpportunityRequirement } from '../opportunity-requirements'
+
 export type UserRole = 'student' | 'admin'
 
 export type ReviewStatus = 'pending' | 'published' | 'rejected' | 'archived'
@@ -24,6 +26,7 @@ export type ListingRow = {
   /** ISO date, YYYY-MM-DD. */
   deadline: string
   apply_url: string
+  requirements: OpportunityRequirement[]
   description: string | null
   source_name: string | null
   source_url: string | null
@@ -48,6 +51,7 @@ export type ListingInsert = Omit<ListingRow, 'id' | 'created_at' | 'updated_at' 
   verified_at?: string | null
   featured?: boolean
   archived_at?: string | null
+  requirements?: OpportunityRequirement[]
 }
 
 export type ProfileRow = {
@@ -75,6 +79,7 @@ export type ScholarshipRow = {
   deadline: string | null
   eligibility: string | null
   apply_url: string
+  requirements: OpportunityRequirement[]
   description: string | null
   source_name: string | null
   source_url: string | null
@@ -99,6 +104,7 @@ export type ScholarshipInsert = Omit<ScholarshipRow, 'id' | 'created_at' | 'upda
   verified_at?: string | null
   featured?: boolean
   archived_at?: string | null
+  requirements?: OpportunityRequirement[]
 }
 
 export type SubscriberRow = {

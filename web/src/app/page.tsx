@@ -276,18 +276,18 @@ function PhaseBadge({
   phase: string
   status: 'live' | 'building' | 'planned' | 'funding'
 }) {
+  if (status === 'funding') return null
+
   const tone = {
     live: 'bg-moss text-white',
     building: 'bg-moss/12 text-moss',
     planned: 'bg-clay/10 text-clay',
-    funding: 'bg-ink/8 text-muted',
   }[status]
 
   const label = {
     live: 'Live now',
     building: 'Building now',
     planned: phase,
-    funding: 'Needs funding',
   }[status]
 
   return (

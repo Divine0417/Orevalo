@@ -58,7 +58,7 @@ export async function getListingBySlug(slug: string, preview = false) {
     const supabase = await createClient()
     let query = supabase
       .from('listings')
-      .select('id, slug, company, title, location, field, deadline, apply_url, description, source_name, source_url, verified_at, featured, archived_at, published')
+      .select('id, slug, company, title, location, field, deadline, apply_url, requirements, description, source_name, source_url, verified_at, featured, archived_at, published')
       .eq('slug', slug)
     if (!preview) query = query.eq('published', true).is('archived_at', null)
     const { data, error } = await query.maybeSingle()

@@ -5,6 +5,7 @@ import Modal from './Modal'
 import { createListing, updateListing, type ActionResult } from './actions'
 import { FIELDS, LOCATIONS, type Listing } from '@/lib/listings'
 import type { ListingRow } from '@/lib/supabase/types'
+import { formatRequirementInput } from '@/lib/opportunity-requirements'
 
 const inputClass =
   'w-full rounded-xl border-[1.5px] border-line bg-cream px-4 py-3 text-[0.95rem] outline-none focus-visible:border-clay focus-visible:bg-white'
@@ -129,6 +130,7 @@ export default function ListingForm({
       </div>
 
       <label className="flex flex-col gap-2"><span className={labelClass}>Description</span><textarea name="description" defaultValue={listing?.description ?? ''} className={`${inputClass} min-h-24`} /></label>
+      <label className="flex flex-col gap-2"><span className={labelClass}>Eligibility requirements</span><textarea name="requirements" defaultValue={formatRequirementInput(listing?.requirements)} placeholder={'Degree level: Bachelor\'s student\nNationality: Nigerian citizen\nExperience: No prior experience required'} className={`${inputClass} min-h-28`} /></label>
       <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
         <label className="flex flex-col gap-2"><span className={labelClass}>Source name</span><input name="source_name" defaultValue={listing?.source_name ?? ''} placeholder="Company careers page" className={inputClass} /></label>
         <label className="flex flex-col gap-2"><span className={labelClass}>Source link</span><input type="url" name="source_url" defaultValue={listing?.source_url ?? ''} placeholder="https://..." className={inputClass} /></label>

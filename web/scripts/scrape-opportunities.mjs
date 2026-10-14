@@ -56,6 +56,7 @@ function decodeHtml(value) {
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&#(x[\da-f]+|\d+);/gi, (_match, code) => String.fromCodePoint(code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number.parseInt(code, 10)))
 }
 
 function absoluteUrl(value, sourceUrl) {
@@ -88,7 +89,14 @@ function jsonLdValues(html) {
   const values = []
   for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
-      const parsed = JSON.parse(match[1].trim())
+      const source = match[1].trim()
+      let parsed
+      try {
+        parsed = JSON.parse(source)
+      } catch {
+        const repaired = source.replace(/"(?:\\.|[^"\\])*"/gs, (value) => value.replace(/[\u0000-\u001f]/g, (character) => JSON.stringify(character).slice(1, -1)))
+        parsed = JSON.parse(repaired)
+      }
       values.push(...(Array.isArray(parsed) ? parsed : [parsed]))
     } catch {
       // A malformed JSON-LD block should not prevent other extraction paths.
@@ -151,6 +159,102 @@ function htmlText(html) {
   return cleanText(decodeHtml(html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')))
 }
 
+function opportunityDescription(value) {
+  let html = String(value ?? '')
+  for (let index = 0; index < 3; index += 1) html = decodeHtml(html)
+  html = html
+    .replace(/<(script|style|nav|header|footer|form|aside)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<li\b[^>]*>/gi, '\n- ')
+    .replace(/<\/(?:p|div|section|article|h[1-6]|li|br)\s*>/gi, '\n')
+    .replace(/<br\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+  return html
+    .split(/\r?\n/)
+    .map((line) => cleanText(line))
+    .filter((line) => line && !/send this job to a friend|send this to a friend|share this job|subscribe on telegram|build your cv for free/i.test(line))
+    .join('\n')
+    .slice(0, 4000)
+}
+
+function structuredValue(value) {
+  if (typeof value === 'string' || typeof value === 'number') return String(value).trim()
+  if (Array.isArray(value)) return value.map(structuredValue).filter(Boolean).join('; ')
+  if (!value || typeof value !== 'object') return ''
+  if (value.monthsOfExperience != null) return `${value.monthsOfExperience} months`
+  if (value.yearsOfExperience != null) return `${value.yearsOfExperience} years`
+  return firstString(value.credentialCategory, value.educationalLevel, value.name, value.description, value.value)
+}
+
+function labelRequirement(value) {
+  if (/\b(master|bachelor|degree|diploma|education|academic)\b/i.test(value)) return 'Degree level'
+  if (/\b(nationality|national|citizen|citizenship)\b/i.test(value)) return 'Nationality'
+  if (/\b(nigeria|ghana|kenya|south africa|african|resident|residence)\b/i.test(value)) return 'Eligible location'
+  if (/\b(years?|months?)\b.*\b(experience|work|relevant)\b|\b(experience|work)\b.*\b(years?|months?)\b/i.test(value)) return 'Experience'
+  if (/\b(field|course|discipline|study|speciali[sz]ation)\b/i.test(value)) return 'Field of study'
+  return 'Requirement'
+}
+
+function requirementsFromPosting(jobPosting, description) {
+  const requirements = []
+  const add = (label, value) => {
+    const detail = structuredValue(value)
+    if (detail && !requirements.some((item) => item.label === label && item.detail.toLowerCase() === detail.toLowerCase())) {
+      requirements.push({ label, detail })
+    }
+  }
+
+  add('Degree level', jobPosting.educationRequirements)
+  add('Experience', jobPosting.experienceRequirements)
+  add('Eligible location', jobPosting.applicantLocationRequirements)
+  add('Field of study', jobPosting.educationalRequirements)
+  add('Eligibility', jobPosting.eligibility)
+
+  let html = String(description ?? '')
+  for (let index = 0; index < 3; index += 1) html = decodeHtml(html)
+  const requirementHeading = /<(?:h[1-6]|p|div)\b[^>]*>(?:(?!<\/(?:h[1-6]|p|div)>)[\s\S]){0,140}?(?:requirements|eligibility|qualifications|who can apply)(?:(?!<\/(?:h[1-6]|p|div)>)[\s\S]){0,140}?<\/(?:h[1-6]|p|div)>/i.exec(html)
+  if (requirementHeading) {
+    const section = html.slice(requirementHeading.index + requirementHeading[0].length).split(/<h[1-6]\b/i)[0]
+    for (const match of section.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) {
+      const detail = opportunityDescription(match[1]).replace(/^-\s*/, '').trim()
+      if (detail) add(labelRequirement(detail), detail)
+    }
+  }
+  return requirements
+}
+
+function isProcurementNotice(title, description) {
+  return /\b(?:request for (?:proposals?|quotations?|bids?)|call for (?:proposals?|expressions? of interest)|expression of interest|RFP|RFQ|EOI|tender|procurement notice|invitation to bid)\b/i.test(`${title} ${description}`)
+}
+
+function hostKey(value) {
+  try {
+    return new URL(value).hostname.toLowerCase().replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
+function preferredApplyUrl(html, sourceUrl, fallbackUrl) {
+  const sourceHost = hostKey(sourceUrl)
+  const external = (value) => {
+    const url = absoluteUrl(value, sourceUrl)
+    return /^https?:\/\//i.test(url) && hostKey(url) !== sourceHost ? url : ''
+  }
+  const anchors = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)].map((match) => {
+    const href = match[1].match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1] ?? ''
+    const label = htmlText(match[2])
+    return { href, label, url: external(decodeHtml(href)) }
+  })
+  const official = anchors.find(({ url, label }) => url && /apply|application|official|career|click here|website/i.test(label))
+  if (official) return official.url
+  const jsonApply = jsonLdValues(html).flatMap((item) => [item?.applicationUrl, item?.url]).map(external).find(Boolean)
+  if (jsonApply) return jsonApply
+  const applyPath = anchors.find(({ url }) => url && /\/apply(?:\/|$)|\/application(?:\/|$)/i.test(new URL(url).pathname))
+  if (applyPath) return applyPath.url
+  const sourceApply = anchors.find(({ href, label }) => /apply|application/i.test(label) && hostKey(absoluteUrl(decodeHtml(href), sourceUrl)) === sourceHost)
+  return sourceApply ? absoluteUrl(decodeHtml(sourceApply.href), sourceUrl) : fallbackUrl
+}
+
 function linksToPath(html, sourceUrl, pattern) {
   return [...html.matchAll(/href=["']([^"']+)["']/gi)]
     .map((match) => ({ url: absoluteUrl(decodeHtml(match[1]), sourceUrl), text: '' }))
@@ -175,39 +279,27 @@ async function fetchPage(url) {
 }
 
 export function extractMyJobMagListing(detailHtml, sourceUrl) {
-  const text = htmlText(detailHtml)
   const jobPosting = jsonLdValues(detailHtml).find((item) => item?.['@type'] === 'JobPosting') ?? null
-  const jobDescription = jobPosting?.description ?? text
+  if (!jobPosting) return null
   const pageTitle = cleanText(decodeHtml(detailHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''))
-  const likelyHeader = headingFrom(detailHtml)
   const title = firstString(
     jobPosting?.title,
-    likelyHeader && !/send this job to a friend|send this to a friend|share this job/i.test(likelyHeader) ? likelyHeader : '',
-    pageTitle.split(/\s+at\s+/i)[0],
-    pageTitle.replace(/\s+\|\s+MyJobMag.*$/i, '')
+    pageTitle.split(/\s+at\s+/i)[0]
   )
   const company = firstString(
     jobPosting?.hiringOrganization?.name,
     jobPosting?.hiringOrganization,
     pageTitle.match(/\s+at\s+(.+?)(?:\s+[A-Z][a-z]+,?\s+\d{4}\s+\|\s+MyJobMag|\s+\|\s+MyJobMag)?$/i)?.[1],
-    text.match(/(?:company|organization)\s*[:\-]\s*([A-Za-z0-9 &.,()/-]{2,120})/i)?.[1],
     ''
   )
   const structuredLocation = locationText(jobPosting?.jobLocation)
-  const locationLine = firstString(structuredLocation, text.match(/Location\s+(.{2,160}?)(?:Job Field|Salary|Posted:|Deadline:)/i)?.[1], text)
-  const fieldLine = firstString(
-    jobPosting?.occupationalCategory,
-    jobPosting?.industry,
-    text.match(/Job Field\s+(.{2,120}?)(?:Salary|Industry|About the Opportunity|Posted:|Deadline:)/i)?.[1],
-    text
-  )
-  const deadline = isoDate(jobPosting?.validThrough) ?? isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
-  const description = cleanText(decodeHtml(jobDescription)).slice(0, 4000)
+  const locationLine = firstString(structuredLocation, jobPosting?.jobLocationType)
+  const deadline = isoDate(jobPosting.validThrough) ?? isoDate(detailHtml.match(/\bDeadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(htmlText(detailHtml), 'Deadline')
+  const description = opportunityDescription(jobPosting.description)
   const normalizedTitle = title.replace(/\s+at\s+.+$/i, '').trim()
   const normalizedCompany = company.replace(/\s+\|\s+MyJobMag.*$/i, '').trim()
-  const sharePrompt = /send this job to a friend|send this to a friend|share this job/i.test(String(likelyHeader || ''))
 
-  if (!normalizedCompany || !normalizedTitle || !deadline || sharePrompt) {
+  if (!normalizedCompany || !normalizedTitle || !deadline || /send this job to a friend|send this to a friend|share this job/i.test(normalizedTitle) || isProcurementNotice(normalizedTitle, description)) {
     return null
   }
 
@@ -215,10 +307,11 @@ export function extractMyJobMagListing(detailHtml, sourceUrl) {
     company: normalizedCompany,
     title: normalizedTitle,
     location: inferLocation(`${locationLine} ${jobPosting?.jobLocationType ?? ''}`),
-    field: inferField(`${fieldLine} ${jobPosting?.occupationalCategory ?? ''} ${jobPosting?.industry ?? ''} ${normalizedTitle} ${description}`),
+    field: inferField(`${jobPosting?.occupationalCategory ?? ''} ${jobPosting?.industry ?? ''} ${normalizedTitle}`),
     deadline,
-    apply_url: absoluteUrl(firstString(jobPosting?.url, jobPosting?.sameAs, sourceUrl), sourceUrl),
+    apply_url: preferredApplyUrl(detailHtml, sourceUrl, sourceUrl),
     description,
+    requirements: requirementsFromPosting(jobPosting, jobPosting.description),
   }
 }
 
@@ -231,7 +324,7 @@ async function extractMyJobMagListings(indexHtml, sourceUrl) {
       const detailHtml = await fetchPage(link.url)
       const record = extractMyJobMagListing(detailHtml, link.url)
       if (!record) continue
-      records.push({ ...record, apply_url: link.url })
+      records.push(record)
     } catch (error) {
       console.warn(`[scraper] skipped MyJobMag detail ${link.url}: ${error.message}`)
     }
@@ -250,24 +343,48 @@ async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
       const detailUrl = absoluteUrl(decodeHtml(match[1]), sourceUrl)
       const text = htmlText(match[0])
       const deadline = isoDate(match[0].match(/Deadline:\s*([^<\r\n]+)/i)?.[1]) ?? dateAfterLabel(text, 'Deadline')
-      const studyIn = text.match(/Study in:\s*([^\r\n]+)/i)?.[1] ?? text
+      const studyIn = cleanText(decodeHtml(match[0].match(/Study in:\s*([^<\r\n]+)/i)?.[1] ?? ''))
       const summaryLine = text.match(/\b([^\r\n]{2,120})\s+(?:Bachelors?|Masters?|PhD|Doctoral)[^\r\n]*/i)?.[1] ?? ''
       const degreeLevel = inferDegree(text)
       const funder = cleanText(summaryLine.replace(name, '').replace(/\s+(?:Bachelors?|Masters?|PhD|Doctoral).*$/i, ''))
       if (!name || !funder || !deadline || !detailUrl) continue
+      let detailHtml = ''
+      try {
+        detailHtml = await fetchPage(detailUrl)
+      } catch (error) {
+        console.warn(`[scraper] using Scholars4Dev source link for ${detailUrl}: ${error.message}`)
+      }
+      const scholarshipPosting = jsonLdValues(detailHtml).find((item) => item?.['@type'] !== 'JobPosting' && item?.name) ?? null
+      const detailDescription = opportunityDescription(scholarshipPosting?.description ?? '')
+      const eligibility = firstString(
+        structuredValue(scholarshipPosting?.eligibilityRequirements),
+        structuredValue(scholarshipPosting?.eligibility),
+        text.match(/Eligibility:\s*([^\r\n]+)/i)?.[1]
+      )
+      const requirements = requirementsFromPosting({
+        educationRequirements: scholarshipPosting?.educationRequirements ?? degreeLevel,
+        educationalRequirements: scholarshipPosting?.educationalRequirements ?? (text.match(/(?:Field|Study area):\s*([^\r\n]+)/i)?.[1] ?? ''),
+        experienceRequirements: scholarshipPosting?.experienceRequirements,
+        applicantLocationRequirements: scholarshipPosting?.applicantLocationRequirements,
+        eligibility: eligibility || scholarshipPosting?.description,
+      }, scholarshipPosting?.description ?? '')
+      if (studyIn && studyIn !== text) requirements.push({ label: 'Study location', detail: cleanText(studyIn) })
+      const applyUrl = detailHtml ? preferredApplyUrl(detailHtml, detailUrl, detailUrl) : detailUrl
+      const completeEligibility = eligibility || requirements.filter((item) => item.label === 'Eligibility' || item.label === 'Requirement').map((item) => item.detail).join('\n')
       records.push({
         name,
         funder,
-        country: inferCountry(studyIn),
+        country: inferCountry(studyIn || text),
         field: SCHOLARSHIP_FIELDS.find((field) => field !== 'Any' && text.toLowerCase().includes(field.toLowerCase())) ?? 'Any',
         degree_level: degreeLevel,
         deadline,
-        eligibility: null,
-        apply_url: detailUrl,
-        description: text.slice(0, 4000),
+        eligibility: completeEligibility || null,
+        apply_url: applyUrl,
+        description: detailDescription || text.slice(0, 4000),
+        requirements,
       })
     } catch (error) {
-      console.warn(`[scraper] skipped Scholars4Dev detail ${link.url}: ${error.message}`)
+      console.warn(`[scraper] skipped Scholars4Dev detail ${match[1]}: ${error.message}`)
     }
   }
   return records
@@ -285,8 +402,9 @@ function extractListingObjects(html, sourceUrl) {
       location: inferLocation(location),
       field: inferField(`${item.title ?? ''} ${item.description ?? ''}`),
       deadline: isoDate(item.validThrough),
-      apply_url: absoluteUrl(firstString(item.url, item.sameAs), sourceUrl),
+      apply_url: preferredApplyUrl(html, sourceUrl, absoluteUrl(firstString(item.applicationUrl, item.url), sourceUrl)),
       description: cleanText(item.description),
+      requirements: requirementsFromPosting(item, item.description),
     })
   }
   for (const block of articleBlocks(html)) {
@@ -299,8 +417,9 @@ function extractListingObjects(html, sourceUrl) {
       location: inferLocation(text),
       field: inferField(text),
       deadline: isoDate(text.match(/(?:deadline|closes?|closing)[^\d]*(\d{4}-\d{2}-\d{2}|[A-Za-z]+ \d{1,2},? \d{4})/i)?.[1]),
-      apply_url: applyUrl,
+      apply_url: preferredApplyUrl(block, sourceUrl, applyUrl),
       description: text,
+      requirements: [],
     })
   }
   return records
@@ -319,8 +438,9 @@ function extractScholarshipObjects(html, sourceUrl) {
       degree_level: inferDegree(text),
       deadline: isoDate(item.endDate ?? item.validThrough),
       eligibility: cleanText(item.eligibility),
-      apply_url: absoluteUrl(firstString(item.url, item.sameAs), sourceUrl),
+      apply_url: preferredApplyUrl(html, sourceUrl, absoluteUrl(firstString(item.applicationUrl, item.url), sourceUrl)),
       description: cleanText(item.description),
+      requirements: requirementsFromPosting(item, item.description),
     })
   }
   for (const block of articleBlocks(html)) {
@@ -335,8 +455,9 @@ function extractScholarshipObjects(html, sourceUrl) {
       degree_level: inferDegree(text),
       deadline: isoDate(text.match(/(?:deadline|closes?|closing)[^\d]*(\d{4}-\d{2}-\d{2}|[A-Za-z]+ \d{1,2},? \d{4})/i)?.[1]),
       eligibility: null,
-      apply_url: applyUrl,
+      apply_url: preferredApplyUrl(block, sourceUrl, applyUrl),
       description: text,
+      requirements: [],
     })
   }
   return records
@@ -357,12 +478,12 @@ function toInsert(record, kind, sourceName, sourceUrl) {
   if (kind === 'listing') return {
     slug: slugify(`${record.company}-${record.title}`), company: record.company, title: record.title, location: record.location,
     field: record.field, deadline: record.deadline, apply_url: record.apply_url, published: false, status: 'pending',
-    description: record.description || null, source_name: sourceName, source_url: sourceUrl, verified_at: null,
+    description: record.description || null, requirements: record.requirements ?? [], source_name: sourceName, source_url: sourceUrl, verified_at: null,
   }
   return {
     slug: slugify(record.name), name: record.name, funder: record.funder, country: record.country, field: record.field,
     degree_level: record.degree_level, deadline: record.deadline, eligibility: record.eligibility || null, apply_url: record.apply_url,
-    published: false, status: 'pending', description: record.description || null, source_name: sourceName, source_url: sourceUrl, verified_at: null,
+    published: false, status: 'pending', description: record.description || null, requirements: record.requirements ?? [], source_name: sourceName, source_url: sourceUrl, verified_at: null,
   }
 }
 

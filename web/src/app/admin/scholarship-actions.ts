@@ -5,6 +5,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server'
 import type { ActionResult } from './actions'
 import { COUNTRIES, DEGREE_LEVELS, SCHOLARSHIP_FIELDS } from '@/lib/scholarships'
 import { composeReviewUpdate, normalizeReviewStatus } from '@/lib/review-status'
+import { parseRequirementInput, type OpportunityRequirement } from '@/lib/opportunity-requirements'
 
 type ScholarshipValues = {
   name: string
@@ -15,6 +16,7 @@ type ScholarshipValues = {
   deadline: string | null
   eligibility: string | null
   apply_url: string
+  requirements: OpportunityRequirement[]
   published: boolean
   description: string | null
   source_name: string | null
@@ -43,6 +45,7 @@ function readForm(
   const deadlineRaw = String(formData.get('deadline') ?? '').trim()
   const eligibility = String(formData.get('eligibility') ?? '').trim()
   const apply_url = String(formData.get('apply_url') ?? '').trim()
+  const requirements = parseRequirementInput(formData.get('requirements'))
   const published = formData.get('published') === 'on'
   const description = String(formData.get('description') ?? '').trim() || null
   const source_name = String(formData.get('source_name') ?? '').trim() || null
@@ -77,6 +80,7 @@ function readForm(
       deadline: deadlineRaw || null,
       eligibility: eligibility || null,
       apply_url,
+      requirements,
       published,
       description,
       source_name,

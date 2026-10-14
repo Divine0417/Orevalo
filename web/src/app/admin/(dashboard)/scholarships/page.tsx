@@ -76,6 +76,7 @@ export default async function ScholarshipsPage({
       ) : (
         <>
           <SearchBox
+            key={`${q}:${status}`}
             basePath="/admin/scholarships"
             defaultValue={q}
             keep={status === 'all' ? {} : { status }}

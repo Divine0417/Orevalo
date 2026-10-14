@@ -82,6 +82,7 @@ export default async function ListingsPage({
       </header>
 
       <SearchBox
+        key={`${q}:${status}`}
         basePath="/admin/listings"
         defaultValue={q}
         keep={status === 'all' ? {} : { status }}
