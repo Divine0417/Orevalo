@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     let notified = false
     const adminEmail = process.env.SCRAPER_ADMIN_EMAIL
     if (!dryRun && inserted > 0 && isMailerConfigured && adminEmail) {
+      const baseUrl = await siteUrl()
       notified = await sendScraperPendingEmail({
         to: adminEmail,
         inserted,
@@ -39,8 +40,8 @@ export async function GET(request: NextRequest) {
           .filter((result) => 'inserted' in result)
           .map((result) => ({ source: result.source, inserted: Number(result.inserted ?? 0) })),
         reviewUrls: {
-          listings: `${siteUrl()}/admin/listings?status=pending`,
-          scholarships: `${siteUrl()}/admin/scholarships?status=pending`,
+          listings: `${baseUrl}/admin/listings?status=pending`,
+          scholarships: `${baseUrl}/admin/scholarships?status=pending`,
         },
       })
     }

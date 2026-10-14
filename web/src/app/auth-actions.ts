@@ -26,13 +26,14 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
   }
 
   const supabase = await createClient()
+  const baseUrl = await siteUrl()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       // Read by the handle_new_user trigger from 0001 to populate the profile.
       data: { full_name: fullName },
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=%2Faccount&welcome=1`,
+      emailRedirectTo: `${baseUrl}/auth/callback?next=%2Faccount&welcome=1`,
     },
   })
 
@@ -80,11 +81,12 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
 
 export async function signInWithGoogle(formData: FormData) {
   const next = safeNext(String(formData.get('next') ?? '/account'))
+  const baseUrl = await siteUrl()
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   })
 
@@ -106,9 +108,10 @@ export async function requestPasswordReset(
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email) return { ok: false, message: 'Enter your email address.' }
 
+  const baseUrl = await siteUrl()
   const supabase = await createClient()
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl()}${PASSWORD_RESET_PATH}`,
+    redirectTo: `${baseUrl}${PASSWORD_RESET_PATH}`,
   })
 
   // Always report success: whether an address is registered is not public.

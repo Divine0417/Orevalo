@@ -39,8 +39,8 @@ function daysUntil(iso: string, today = new Date()) {
   return Math.round((deadline - start) / 86_400_000)
 }
 
-function renderEmail(opportunities: Opportunity[], reason: string, unsubscribeToken?: string) {
-  const base = siteUrl()
+async function renderEmail(opportunities: Opportunity[], reason: string, unsubscribeToken?: string) {
+  const base = await siteUrl()
   const unsubscribeUrl = unsubscribeToken
     ? `${base}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
     : `${base}/account`
@@ -82,7 +82,7 @@ async function claimAndSend(admin: ReturnType<typeof createAdminClient>, recipie
   const pending = opportunities.filter((item) => claimedKeys.has(`${item.kind}:${item.slug}:${reason}`))
   if (pending.length === 0) return 0
 
-  const email = renderEmail(pending, reason, recipient.unsubscribe_token)
+  const email = await renderEmail(pending, reason, recipient.unsubscribe_token)
   if (await sendOpportunityAlertEmail({ to: recipient.email, ...email })) return pending.length
 
   const claimedIds = (claimed ?? []).filter((row) => claimedKeys.has(`${row.kind}:${row.slug}:${row.reason}`)).map((row) => row.id)

@@ -1,4 +1,5 @@
 import 'server-only'
+import { headers } from 'next/headers'
 
 /**
  * Transactional email.
@@ -16,11 +17,37 @@ const FROM = process.env.EMAIL_FROM ?? 'Orevalo <hello@orevalo.com>'
 
 export const isMailerConfigured = Boolean(RESEND_API_KEY)
 
-export function siteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  )
+export async function siteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
+
+  try {
+    const headerStore = await headers()
+    const forwardedProto =
+      headerStore.get('x-forwarded-proto') ??
+      headerStore.get('x-forwarded-protocol') ??
+      'https'
+    const forwardedHost =
+      headerStore.get('x-forwarded-host') ??
+      headerStore.get('host') ??
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+      process.env.VERCEL_URL
+
+    if (forwardedHost) {
+      return `${forwardedProto}://${forwardedHost}`
+    }
+  } catch {
+    // No request context available (for example cron jobs). Fall back to env.
+  }
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+
+  return 'http://localhost:3000'
 }
 
 type SendArgs = { to: string; subject: string; html: string; text: string }
@@ -100,7 +127,7 @@ function escapeHtml(value: string) {
 
 /** Sends the branded welcome email once an account is created. */
 export async function sendWelcomeEmail(args: { to: string; firstName: string }) {
-  const base = siteUrl()
+  const base = await siteUrl()
   const firstName = escapeHtml(args.firstName || 'there')
   const accountUrl = `${base}/account`
 
@@ -157,7 +184,7 @@ async function sendFormReceiptEmail(args: {
   nextUrl: string
   nextLabel: string
 }) {
-  const base = siteUrl()
+  const base = await siteUrl()
   const firstName = escapeHtml(args.firstName || 'there')
   const heading = escapeHtml(args.heading)
   const message = escapeHtml(args.message)
@@ -230,7 +257,7 @@ export async function sendConfirmationEmail(args: {
   confirmToken: string
   unsubscribeToken: string
 }) {
-  const base = siteUrl()
+  const base = await siteUrl()
   const confirmUrl = `${base}/confirm?token=${args.confirmToken}`
   const unsubscribeUrl = `${base}/unsubscribe?token=${args.unsubscribeToken}`
 
