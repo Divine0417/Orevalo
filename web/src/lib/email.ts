@@ -58,6 +58,33 @@ export async function sendOpportunityAlertEmail(args: {
   return send(args)
 }
 
+export async function sendScraperPendingEmail(args: {
+  to: string
+  inserted: number
+  sources: Array<{ source: string; inserted: number }>
+  reviewUrls: { listings: string; scholarships: string }
+}) {
+  const sourceLines = args.sources
+    .filter((source) => source.inserted > 0)
+    .map((source) => `${source.source}: ${source.inserted}`)
+  const sourceList = sourceLines.join('\n')
+  const htmlSources = sourceLines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')
+
+  return send({
+    to: args.to,
+    subject: `${args.inserted} new pending ${args.inserted === 1 ? 'opportunity' : 'opportunities'} to review`,
+    text: [
+      `Orevalo imported ${args.inserted} new pending ${args.inserted === 1 ? 'opportunity' : 'opportunities'}.`,
+      '',
+      sourceList,
+      '',
+      `Review internships: ${args.reviewUrls.listings}`,
+      `Review scholarships: ${args.reviewUrls.scholarships}`,
+    ].join('\n'),
+    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#2C1A0E"><h1 style="color:#C4622D">New opportunities to review</h1><p>Orevalo imported <strong>${args.inserted}</strong> new pending ${args.inserted === 1 ? 'opportunity' : 'opportunities'}.</p><ul>${htmlSources}</ul><p><a href="${args.reviewUrls.listings}" style="display:inline-block;padding:12px 20px;background:#C4622D;color:#fff;text-decoration:none;border-radius:6px;font-weight:700">Review internships</a></p><p><a href="${args.reviewUrls.scholarships}" style="display:inline-block;padding:12px 20px;background:#2C1A0E;color:#fff;text-decoration:none;border-radius:6px;font-weight:700">Review scholarships</a></p></div>`,
+  })
+}
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => {
     const entities: Record<string, string> = {

@@ -24,7 +24,7 @@ export async function getScholarshipBySlug(slug: string, preview = false) {
     const supabase = await createClient()
     let query = supabase
       .from('scholarships')
-      .select('id, slug, name, funder, country, field, degree_level, deadline, eligibility, apply_url, description, source_name, source_url, verified_at, featured, archived_at, published')
+      .select('id, slug, name, funder, country, field, degree_level, deadline, eligibility, apply_url, requirements, description, source_name, source_url, verified_at, featured, archived_at, published')
       .eq('slug', slug)
     if (!preview) query = query.eq('published', true).is('archived_at', null)
     const { data, error } = await query.maybeSingle()

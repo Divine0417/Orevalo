@@ -20,13 +20,12 @@ const NAV_LINKS = productNav
 
 export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
   const pathname = usePathname()
-  const [open, setOpen] = useState(false)
-
-  useEffect(() => setOpen(false), [pathname])
+  const [openPath, setOpenPath] = useState<string | null>(null)
+  const open = openPath === pathname
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenPath(null)
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
@@ -68,12 +67,12 @@ export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
               >
                 Sign in
               </Link>
-              <a
+              <Link
                 href="/#alerts"
                 className="rounded-full bg-clay px-5 py-2.5 text-[0.875rem] leading-none font-semibold whitespace-nowrap text-white no-underline transition-colors hover:bg-clay-dark"
               >
                 Get opportunities
-              </a>
+              </Link>
             </>
           )}
         </div>
@@ -83,7 +82,7 @@ export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
           aria-expanded={open}
           aria-controls="site-nav-menu"
           aria-label={open ? 'Close menu' : 'Open menu'}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpenPath(open ? null : pathname)}
           className="hidden size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-clay/25 bg-white/70 text-clay transition-colors hover:border-clay max-sm:inline-flex"
         >
           {open ? <Close size="1.35em" /> : <Menu size="1.35em" />}
@@ -99,6 +98,7 @@ export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
             <Link
               key={href}
               href={href}
+              onClick={() => setOpenPath(null)}
               className="block border-b border-clay/10 px-1 py-3.5 font-semibold text-ink no-underline"
             >
               {label}
@@ -107,7 +107,7 @@ export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
           {signedIn ? (
             <Link
               href="/account"
-              onClick={() => setOpen(false)}
+              onClick={() => setOpenPath(null)}
               className="mt-3 rounded-full bg-clay px-5 py-3.5 text-center font-bold text-white no-underline"
             >
               My account
@@ -116,18 +116,18 @@ export default function SiteNav({ signedIn = false }: { signedIn?: boolean }) {
             <>
               <Link
                 href="/login"
-                onClick={() => setOpen(false)}
+                onClick={() => setOpenPath(null)}
                 className="block border-b border-clay/10 px-1 py-3.5 font-semibold text-ink no-underline"
               >
                 Sign in
               </Link>
-              <a
+              <Link
                 href="/#alerts"
-                onClick={() => setOpen(false)}
+                onClick={() => setOpenPath(null)}
                 className="mt-3 rounded-full bg-clay px-5 py-3.5 text-center font-bold text-white no-underline"
               >
                 Get opportunities
-              </a>
+              </Link>
             </>
           )}
         </div>

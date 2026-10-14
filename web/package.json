@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "scrape": "node scripts/scrape-opportunities.mjs",
+    "scrape:all": "node scripts/scrape-all.mjs",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

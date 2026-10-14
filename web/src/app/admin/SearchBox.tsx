@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Close, Search } from '@/components/icons'
 
 /**
@@ -30,9 +30,6 @@ export default function SearchBox({
 }) {
   const router = useRouter()
   const [value, setValue] = useState(defaultValue)
-
-  // Keep in step when the URL changes from elsewhere, e.g. a status tab.
-  useEffect(() => setValue(defaultValue), [defaultValue])
 
   function go(term: string) {
     const params = new URLSearchParams(keep)

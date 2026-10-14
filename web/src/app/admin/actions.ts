@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
 import { FIELDS, LOCATIONS } from '@/lib/listings'
+import { composeReviewUpdate, normalizeReviewStatus } from '@/lib/review-status'
+import { parseRequirementInput, type OpportunityRequirement } from '@/lib/opportunity-requirements'
 
 export type ActionResult = { ok: true } | { ok: false; message: string }
 
@@ -55,6 +57,7 @@ type ListingValues = {
   field: string
   deadline: string
   apply_url: string
+  requirements: OpportunityRequirement[]
   published: boolean
   description: string | null
   source_name: string | null
@@ -76,6 +79,7 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
   const field = String(formData.get('field') ?? '').trim()
   const deadline = String(formData.get('deadline') ?? '').trim()
   const apply_url = String(formData.get('apply_url') ?? '').trim()
+  const requirements = parseRequirementInput(formData.get('requirements'))
   const published = formData.get('published') === 'on'
   const description = String(formData.get('description') ?? '').trim() || null
   const source_name = String(formData.get('source_name') ?? '').trim() || null
@@ -95,7 +99,7 @@ function readListingForm(formData: FormData): { ok: true; values: ListingValues 
     return { ok: false, error: 'The apply link must start with http:// or https://' }
 
   if (source_url && !/^https?:\/\//i.test(source_url)) return { ok: false, error: 'The source link must start with http:// or https://' }
-  return { ok: true, values: { company, title, location, field, deadline, apply_url, published, description, source_name, source_url, verified_at, featured } }
+  return { ok: true, values: { company, title, location, field, deadline, apply_url, requirements, published, description, source_name, source_url, verified_at, featured } }
 }
 
 async function requireAdmin() {
@@ -117,9 +121,10 @@ export async function createListing(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('listings')
-    .insert({ ...parsed.values, slug: slugify(parsed.values.company, parsed.values.title) })
+    .insert({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.company, parsed.values.title) })
 
   if (error) {
     return {
@@ -150,9 +155,10 @@ export async function updateListing(
   if (!parsed.ok) return { ok: false, message: parsed.error }
 
   const supabase = await createClient()
+  const reviewStatus = normalizeReviewStatus({ published: parsed.values.published })
   const { error } = await supabase
     .from('listings')
-    .update({ ...parsed.values, slug: slugify(parsed.values.company, parsed.values.title) })
+    .update({ ...parsed.values, status: reviewStatus, slug: slugify(parsed.values.company, parsed.values.title) })
     .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
@@ -166,10 +172,52 @@ export async function setPublished(id: string, published: boolean): Promise<Acti
   if (denied) return { ok: false, message: denied }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('listings').update({ published }).eq('id', id)
+  const nextStatus = normalizeReviewStatus({ published })
+  const updatePayload = published
+    ? { published, status: nextStatus, rejection_reason: null, archived_at: null }
+    : { published, status: nextStatus }
+
+  const { error } = await supabase
+    .from('listings')
+    .update(updatePayload)
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
 
   revalidatePath('/admin')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function approveListing(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('approved')
+  const { error } = await supabase
+    .from('listings')
+    .update({ ...reviewUpdate, rejection_reason: null })
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidatePath('/admin/listings')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function rejectListing(id: string, reason: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+
+  const supabase = await createClient()
+  const reviewUpdate = composeReviewUpdate('rejected', reason)
+  const { error } = await supabase
+    .from('listings')
+    .update(reviewUpdate)
+    .eq('id', id)
+  if (error) return { ok: false, message: error.message }
+
+  revalidatePath('/admin/listings')
   revalidatePath('/internships')
   return { ok: true }
 }
@@ -190,6 +238,20 @@ export async function archiveListing(id: string): Promise<ActionResult> {
   if (denied) return { ok: false, message: denied }
   const supabase = await createClient()
   const { error } = await supabase.from('listings').update({ archived_at: new Date().toISOString(), published: false }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  revalidatePath('/admin/listings')
+  revalidatePath('/internships')
+  return { ok: true }
+}
+
+export async function unarchiveListing(id: string): Promise<ActionResult> {
+  const denied = await requireAdmin()
+  if (denied) return { ok: false, message: denied }
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('listings')
+    .update({ archived_at: null, published: false, status: 'pending', rejection_reason: null })
+    .eq('id', id)
   if (error) return { ok: false, message: error.message }
   revalidatePath('/admin/listings')
   revalidatePath('/internships')

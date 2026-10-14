@@ -19,8 +19,16 @@ import { fetchWithRetry } from '@/lib/supabase/fetch'
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
+  const isAdminHost = request.nextUrl.hostname === 'admin.orevalo.com'
+  const isAdminRoot = isAdminHost && request.nextUrl.pathname === '/'
 
-  if (!isSupabaseConfigured) return response
+  if (!isSupabaseConfigured) {
+    if (!isAdminRoot) return response
+
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin'
+    return NextResponse.rewrite(url)
+  }
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
     global: { fetch: fetchWithRetry },
@@ -68,6 +76,18 @@ export async function proxy(request: NextRequest) {
     url.pathname = '/admin'
     url.search = ''
     return NextResponse.redirect(url)
+  }
+
+  if (isAdminRoot) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin'
+    const rewrittenResponse = NextResponse.rewrite(url)
+
+    for (const cookie of response.cookies.getAll()) {
+      rewrittenResponse.cookies.set(cookie)
+    }
+
+    return rewrittenResponse
   }
 
   return response
