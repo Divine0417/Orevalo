@@ -4,8 +4,8 @@ import { pathToFileURL } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 
 const DEFAULT_USER_AGENT = 'OrevaloOpportunityBot/1.0 (+https://orevalo.com/contact)'
-const LISTING_FIELDS = ['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare']
-const LISTING_LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Other']
+const LISTING_FIELDS = ['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare', 'Other']
+const LISTING_LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Pan-African', 'Other']
 const SCHOLARSHIP_COUNTRIES = ['Pan-African', 'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other']
 const SCHOLARSHIP_FIELDS = ['Any', 'Engineering', 'Business', 'Technology', 'Finance', 'Healthcare']
 const DEGREE_LEVELS = ['Any', 'Undergraduate', 'Masters', 'PhD']
@@ -71,7 +71,21 @@ function isoDate(value) {
   if (!value) return null
   const match = String(value).match(/\d{4}-\d{2}-\d{2}/)
   if (match) return match[0]
-  const readable = String(value).match(/\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}/)?.[0] ?? String(value)
+  const source = String(value)
+  const monthDayYear = source.match(/\b([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})\b/)
+  if (monthDayYear) {
+    const month = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december',
+    ].indexOf(monthDayYear[1].toLowerCase())
+    const day = Number(monthDayYear[2])
+    const year = Number(monthDayYear[3])
+    const date = new Date(Date.UTC(year, month, day))
+    if (month >= 0 && date.getUTCMonth() === month && date.getUTCDate() === day) {
+      return date.toISOString().slice(0, 10)
+    }
+  }
+  const readable = source.match(/\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}/)?.[0] ?? source
   const parsed = Date.parse(readable)
   if (Number.isNaN(parsed)) return null
   return new Date(parsed).toISOString().slice(0, 10)
@@ -234,18 +248,32 @@ function hostKey(value) {
   }
 }
 
-function preferredApplyUrl(html, sourceUrl, fallbackUrl) {
+export function preferredApplyUrl(html, sourceUrl, fallbackUrl) {
   const sourceHost = hostKey(sourceUrl)
   const external = (value) => {
     const url = absoluteUrl(value, sourceUrl)
-    return /^https?:\/\//i.test(url) && hostKey(url) !== sourceHost ? url : ''
+    const host = hostKey(url)
+    if (!/^https?:\/\//i.test(url) || !host || host === sourceHost) return ''
+    if (/^(?:facebook|instagram|linkedin|pinterest|twitter|x|whatsapp|youtube|tiktok)\.com$/i.test(host)) return ''
+    if (/^(?:wa\.me|t\.me|twitter\.com|x\.com)$/i.test(host)) return ''
+    return url
   }
   const anchors = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)].map((match) => {
     const href = match[1].match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1] ?? ''
     const label = htmlText(match[2])
-    return { href, label, url: external(decodeHtml(href)) }
+    const url = external(decodeHtml(href))
+    const lowerLabel = label.toLowerCase()
+    const lowerUrl = url.toLowerCase()
+    const score =
+      (/\b(?:apply|application|submit|register)\b/i.test(lowerLabel) ? 100 : 0) +
+      (/\b(?:official|career|recruitment)\b/i.test(lowerLabel) ? 50 : 0) +
+      (/\/(?:apply|application|careers?)(?:\/|$)/i.test(new URL(url || 'https://invalid.local').pathname) ? 25 : 0) -
+      (/(?:facebook|instagram|linkedin|pinterest|twitter|x\.com|whatsapp|youtube|tiktok|share|subscribe)/i.test(`${lowerLabel} ${lowerUrl}`) ? 200 : 0)
+    return { href, label, url, score }
   })
-  const official = anchors.find(({ url, label }) => url && /apply|application|official|career|click here|website/i.test(label))
+  const official = anchors
+    .filter(({ url, score }) => url && score > 0)
+    .sort((a, b) => b.score - a.score)[0]
   if (official) return official.url
   const jsonApply = jsonLdValues(html).flatMap((item) => [item?.applicationUrl, item?.url]).map(external).find(Boolean)
   if (jsonApply) return jsonApply
@@ -313,6 +341,71 @@ export function extractMyJobMagListing(detailHtml, sourceUrl) {
     description,
     requirements: requirementsFromPosting(jobPosting, jobPosting.description),
   }
+}
+
+export function opportunityDeskFeedEntries(feedXml) {
+  return [...feedXml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].map(([, item]) => {
+    const value = (tag) => {
+      const content = item.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'))?.[1] ?? ''
+      return cleanText(decodeHtml(content.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')))
+    }
+    return {
+      title: value('title'),
+      url: value('link'),
+      description: value('description'),
+      categories: [...item.matchAll(/<category\b[^>]*>([\s\S]*?)<\/category>/gi)]
+        .map(([, category]) => cleanText(decodeHtml(category.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')))),
+    }
+  })
+}
+
+export function extractOpportunityDeskListing(detailHtml, sourceUrl, entry) {
+  const title = cleanText(entry.title)
+  const text = htmlText(detailHtml)
+  const article = detailHtml.match(/<div\b[^>]*class=["'][^"']*\bentry-content\b[^"']*["'][^>]*>([\s\S]*?)(?:<div\b[^>]*class=["'][^"']*\b(?:post-share|share-box)\b|<\/article>)/i)?.[1] ?? detailHtml
+  const description = opportunityDescription(article || entry.description)
+  const deadline = dateAfterLabel(`${entry.description} ${text}`, 'Deadline') ??
+    isoDate(text.match(/\b(?:Deadline|Closing date|Application deadline)\s*:?\s*([^<\r\n]+)/i)?.[1])
+  const company = title.match(/^(.+?)\s+(?:internship|traineeship|intern|co[- ]?op)\b/i)?.[1]?.trim() ?? ''
+  const location = inferLocation(`${text} ${entry.description}`)
+  const panAfrican = entry.categories.some((category) => /\bafrica\b/i.test(category))
+  const requirements = requirementsFromPosting({}, article)
+  if (panAfrican && !requirements.some((item) => item.label === 'Eligible location')) {
+    requirements.push({ label: 'Eligible location', detail: 'Africa-tagged opportunity; confirm applicant eligibility on the source page.' })
+  }
+
+  if (!title || !company || !deadline || !panAfrican) return null
+  return {
+    company,
+    title,
+    source_url: sourceUrl,
+    location: location === 'Other' && panAfrican ? 'Pan-African' : location,
+    field: inferField(`${title} ${description}`),
+    deadline,
+    apply_url: preferredApplyUrl(detailHtml, sourceUrl, sourceUrl),
+    description,
+    requirements,
+  }
+}
+
+async function extractOpportunityDeskListings(feedXml, feedUrl) {
+  const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
+  const records = []
+  const entries = opportunityDeskFeedEntries(feedXml)
+    .filter((entry) => entry.categories.some((category) => /\binternships?\b/i.test(category)))
+    .filter((entry) => entry.categories.some((category) => /\bafrica\b/i.test(category)))
+
+  for (const entry of entries.slice(0, limit)) {
+    const detailUrl = absoluteUrl(entry.url, feedUrl)
+    try {
+      const detailHtml = await fetchPage(detailUrl)
+      const record = extractOpportunityDeskListing(detailHtml, detailUrl, entry)
+      if (record) records.push(record)
+    } catch (error) {
+      console.warn(`[scraper] skipped Opportunity Desk internship ${detailUrl}: ${error.message}`)
+    }
+  }
+  return records
 }
 
 async function extractMyJobMagListings(indexHtml, sourceUrl) {
@@ -494,15 +587,22 @@ export async function scrapeSource({ sourceUrl, kind, sourceName, dryRun = false
   const hostname = new URL(sourceUrl).hostname
   const isMyJobMag = hostname.endsWith('myjobmag.com') && kind === 'listing'
   const isScholars4Dev = hostname.endsWith('scholars4dev.com') && kind === 'scholarship'
+  const isOpportunityDesk = hostname.endsWith('opportunitydesk.org') && kind === 'listing'
   const extracted = isMyJobMag
     ? await extractMyJobMagListings(html, sourceUrl)
     : isScholars4Dev
       ? await extractScholars4DevScholarships(html, sourceUrl)
+      : isOpportunityDesk
+        ? await extractOpportunityDeskListings(html, sourceUrl)
     : kind === 'listing'
       ? extractListingObjects(html, sourceUrl)
       : extractScholarshipObjects(html, sourceUrl)
   const unique = new Map()
-  for (const record of extracted) if (validate(record, kind)) unique.set(`${record.apply_url}|${kind}`, toInsert(record, kind, sourceName, sourceUrl))
+  for (const record of extracted) {
+    if (validate(record, kind)) {
+      unique.set(`${record.apply_url}|${kind}`, toInsert(record, kind, sourceName, record.source_url ?? sourceUrl))
+    }
+  }
   const records = [...unique.values()]
   const summary = { source: sourceName, url: sourceUrl, kind, extracted: extracted.length, valid: records.length, dryRun }
   if (dryRun || records.length === 0) return summary

@@ -1,7 +1,68 @@
-import { describe, expect, it } from 'vitest'
-import { extractMyJobMagListing, inferField, inferLocation } from './scrape-opportunities.mjs'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  extractMyJobMagListing,
+  extractOpportunityDeskListing,
+  inferField,
+  inferLocation,
+  opportunityDeskFeedEntries,
+  preferredApplyUrl,
+  scrapeSource,
+} from './scrape-opportunities.mjs'
 
-describe('MyJobMag extraction', () => {
+describe('Opportunity source extraction', () => {
+  it('runs the Opportunity Desk feed through to a validated dry-run record', async () => {
+    const feedUrl = 'https://opportunitydesk.org/category/jobs-and-internships/internships/feed/'
+    const detailUrl = 'https://opportunitydesk.org/example-internship/'
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(async (url) => new Response(
+      String(url) === feedUrl
+        ? `<rss><item>
+            <title>Example Institute Internship 2027</title>
+            <link>${detailUrl}</link>
+            <description><![CDATA[Deadline: October 31, 2026]]></description>
+            <category><![CDATA[Internships]]></category>
+            <category><![CDATA[Africa]]></category>
+          </item></rss>`
+        : `<div class="entry-content">
+            <p>Deadline: October 31, 2026</p>
+            <a href="https://apply.example/form">Click here to apply</a>
+          </div>`,
+      { status: 200 },
+    ))
+
+    try {
+      const summary = await scrapeSource({
+        sourceUrl: feedUrl,
+        kind: 'listing',
+        sourceName: 'Opportunity Desk',
+        dryRun: true,
+      })
+      expect(summary).toMatchObject({ extracted: 1, valid: 1, dryRun: true })
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('reads titles, detail URLs, and category labels from the RSS feed', () => {
+    const entries = opportunityDeskFeedEntries(`
+      <rss><channel><item>
+        <title>Example Internship 2027</title>
+        <link>https://opportunitydesk.org/example-internship/</link>
+        <description><![CDATA[Deadline: October 31, 2026]]></description>
+        <category><![CDATA[Internships]]></category>
+        <category><![CDATA[Africa]]></category>
+      </item></channel></rss>
+    `)
+
+    expect(entries).toEqual([{
+      title: 'Example Internship 2027',
+      url: 'https://opportunitydesk.org/example-internship/',
+      description: 'Deadline: October 31, 2026',
+      categories: ['Internships', 'Africa'],
+    }])
+  })
+
   it('prefers structured job details and avoids generic engineering matches', () => {
     const html = `
       <html>
@@ -47,6 +108,66 @@ describe('MyJobMag extraction', () => {
     expect(record.location).toBe('Remote')
     expect(record.field).toBe('Technology')
     expect(record.deadline).toBe('2026-10-15')
+  })
+
+  describe('Opportunity Desk extraction', () => {
+    it('extracts Africa-tagged internships and prefers the direct application link', () => {
+      const detailUrl = 'https://opportunitydesk.org/2026/10/19/quality-of-government-institute-internship-2027/'
+      const html = `
+        <html>
+          <title>Quality of Government Institute (QoG) Internship 2027 – Opportunity Desk</title>
+          <div class="entry-content">
+            <p>Deadline: October 31, 2026</p>
+            <p>Applicants from across Africa are welcome to apply.</p>
+            <p><a href="https://www.gu.se/en/quality-government">Official website</a></p>
+            <p><a href="https://forms.example/apply">Click here to apply</a></p>
+          </div>
+        </html>
+      `
+      const entry = {
+        title: 'Quality of Government Institute (QoG) Internship 2027',
+        description: 'Deadline: October 31, 2026',
+        categories: ['Internships', 'Africa'],
+      }
+
+      const record = extractOpportunityDeskListing(html, detailUrl, entry)
+
+      expect(record).not.toBeNull()
+      expect(record.company).toBe('Quality of Government Institute (QoG)')
+      expect(record.location).toBe('Pan-African')
+      expect(record.deadline).toBe('2026-10-31')
+      expect(record.apply_url).toBe('https://forms.example/apply')
+      expect(record.requirements).toContainEqual({
+        label: 'Eligible location',
+        detail: 'Africa-tagged opportunity; confirm applicant eligibility on the source page.',
+      })
+    })
+
+    it('does not accept opportunities without an Africa category', () => {
+      const record = extractOpportunityDeskListing(
+        '<title>Sample Internship</title><p>Deadline: October 31, 2026</p>',
+        'https://opportunitydesk.org/sample/',
+        {
+          title: 'Sample Internship',
+          description: 'Deadline: October 31, 2026',
+          categories: ['Internships', 'Europe'],
+        },
+      )
+
+      expect(record).toBeNull()
+    })
+
+    it('chooses an institution application link over the source listing and social links', () => {
+      const sourceUrl = 'https://www.scholars4dev.com/2026/10/21/chalmers-ipoet-scholarships-for-international-students/'
+      const html = `
+        <a href="https://www.facebook.com/sharer.php">Share</a>
+        <a href="https://www.chalmers.se/en/education/application-and-admission/scholarships-for-fee-paying-students/how-to-apply-for-a-scholarship/">how to apply page</a>
+      `
+
+      expect(preferredApplyUrl(html, sourceUrl, sourceUrl)).toBe(
+        'https://www.chalmers.se/en/education/application-and-admission/scholarships-for-fee-paying-students/how-to-apply-for-a-scholarship/',
+      )
+    })
   })
 
   it('maps real location and field text to the allowed vocabulary', () => {

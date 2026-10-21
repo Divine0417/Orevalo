@@ -32,12 +32,12 @@ export const SCRAPER_SOURCES = [
     notes: 'Currently redirects to Jobberman; keep disabled until a stable public source is confirmed.',
   },
   {
-    id: 'opportunity-desk-scholarships',
+    id: 'opportunity-desk-internships',
     name: 'Opportunity Desk',
-    kind: 'scholarship',
-    url: 'https://opportunitydesk.org/',
-    enabled: false,
-    notes: 'Public site returned rate limiting during audit; add a source-specific adapter before enabling.',
+    kind: 'listing',
+    url: 'https://opportunitydesk.org/category/jobs-and-internships/internships/feed/',
+    enabled: true,
+    notes: 'Internships category RSS feed. Imports Africa-tagged posts only; review direct application links before publishing.',
   },
   {
     id: 'mastercard-foundation-scholars',
