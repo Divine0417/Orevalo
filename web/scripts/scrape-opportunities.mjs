@@ -9,8 +9,9 @@ const LISTING_LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Pan-African', 'Other']
 const SCHOLARSHIP_COUNTRIES = ['Pan-African', 'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other']
 const SCHOLARSHIP_FIELDS = ['Any', 'Engineering', 'Business', 'Technology', 'Finance', 'Healthcare']
 const DEGREE_LEVELS = ['Any', 'Undergraduate', 'Masters', 'PhD']
+const AFTERSCHOOLAFRICA_CATEGORY_IDS = [98, 110]
 const LISTING_FIELD_KEYWORDS = {
-  Engineering: ['engineering', 'technical', 'civil', 'mechanical', 'electrical', 'construction', 'site engineering', 'oil and gas', 'energy', 'mining', 'manufacturing', 'shipping', 'aerospace', 'architectural'],
+  Engineering: ['engineering', 'technical', 'civil', 'mechanical', 'electrical', 'construction', 'site engineering', 'oil and gas', 'energy', 'mining', 'manufacturing', 'shipping', 'aerospace', 'architectural', 'occupational health and safety', 'occupational safety', 'health and safety', 'safety officer', 'workplace safety', 'hse'],
   Healthcare: ['healthcare', 'medical', 'pharmaceutical', 'nurse', 'doctor', 'clinical', 'hospital', 'clinic', 'caregiver', 'health'],
   Finance: ['finance', 'account', 'audit', 'banking', 'business analysis', 'insurance', 'treasury', 'risk management', 'compliance', 'procurement', 'storekeeping', 'supply chain'],
   Business: ['business', 'sales', 'marketing', 'management', 'operations', 'human resources', 'hr', 'project management', 'customer care', 'consultancy', 'administration', 'logistics', 'strategic', 'product management', 'communications', 'public relations'],
@@ -72,21 +73,24 @@ function isoDate(value) {
   const match = String(value).match(/\d{4}-\d{2}-\d{2}/)
   if (match) return match[0]
   const source = String(value)
-  const monthDayYear = source.match(/\b([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})\b/)
-  if (monthDayYear) {
-    const month = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december',
-    ].indexOf(monthDayYear[1].toLowerCase())
-    const day = Number(monthDayYear[2])
-    const year = Number(monthDayYear[3])
+  const monthNames = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
+  ]
+  const monthFirst = source.match(/\b([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})\b/)
+  const dayFirst = source.match(/\b(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})\b/)
+  const readableDate = monthFirst ?? dayFirst
+  if (readableDate) {
+    const monthName = monthFirst ? readableDate[1] : readableDate[2]
+    const month = monthNames.findIndex((name) => name.startsWith(monthName.toLowerCase()))
+    const day = Number(monthFirst ? readableDate[2] : readableDate[1])
+    const year = Number(readableDate[3])
     const date = new Date(Date.UTC(year, month, day))
     if (month >= 0 && date.getUTCMonth() === month && date.getUTCDate() === day) {
       return date.toISOString().slice(0, 10)
     }
   }
-  const readable = source.match(/\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}/)?.[0] ?? source
-  const parsed = Date.parse(readable)
+  const parsed = Date.parse(source)
   if (Number.isNaN(parsed)) return null
   return new Date(parsed).toISOString().slice(0, 10)
 }
@@ -200,19 +204,47 @@ function structuredValue(value) {
 }
 
 function labelRequirement(value) {
-  if (/\b(master|bachelor|degree|diploma|education|academic)\b/i.test(value)) return 'Degree level'
-  if (/\b(nationality|national|citizen|citizenship)\b/i.test(value)) return 'Nationality'
-  if (/\b(nigeria|ghana|kenya|south africa|african|resident|residence)\b/i.test(value)) return 'Eligible location'
-  if (/\b(years?|months?)\b.*\b(experience|work|relevant)\b|\b(experience|work)\b.*\b(years?|months?)\b/i.test(value)) return 'Experience'
-  if (/\b(field|course|discipline|study|speciali[sz]ation)\b/i.test(value)) return 'Field of study'
+  const heading = value.match(/^([^:]{2,60}):\s*/)?.[1]?.toLowerCase() ?? ''
+  if (/\b(education|degree|qualification|academic background)\b/.test(heading)) return 'Degree level'
+  if (/\b(experience|work background|background)\b/.test(heading)) return 'Experience'
+  if (/\b(nationality|citizenship|eligible location|residence)\b/.test(heading)) return 'Eligible location'
+  if (/\b(field of study|course of study|discipline|area of study)\b/.test(heading)) return 'Field of study'
+  if (/\b(master|bachelor|degree|diploma|academic qualification)\b/i.test(value)) return 'Degree level'
+  if (/\b(nationality|citizenship|citizens? from|citizen of|national of|non-eu\/eea countries)\b/i.test(value)) return 'Nationality'
+  if (/\b(applicants? must (?:be based|reside|live)|open to (?:applicants|citizens|nationals)|eligible in|willingness to work (?:in|on|across)|assignment in)\b/i.test(value)) return 'Eligible location'
+  if (/\b(?:previous|prior|relevant|progressive|field-level)\b[^.]{0,80}\bexperience\b|\bexperience\b[^.]{0,80}\b(?:desirable|preferred|advantage|required)\b/i.test(value)) return 'Experience'
+  if (/\b\d+(?:\.\d+)?\s+(?:years?|months?)\b/i.test(value) ||
+      /\b(?:minimum|at least|more than|over)\s+\d+\s+(?:years?|months?)\b/i.test(value) ||
+      /\b(?:years?|months?)\b[^.]{0,50}\bexperience\b|\bexperience\b[^.]{0,50}\b(?:years?|months?)\b/i.test(value)) return 'Experience'
+  if (/\b(?:OND|HND|BSc|BA|BEng|BTech|NCE|SSCE|WAEC)\b/i.test(value)) return 'Degree level'
+  if (/\b(?:field of study|course of study|area of study|degree in|degree relevant to|discipline)\b/i.test(value)) return 'Field of study'
   return 'Requirement'
+}
+
+function isRequirementStatement(value) {
+  const detail = value.trim()
+  if (!detail || detail.length > 500) return false
+  const statement = detail.replace(/^[^:]{2,60}:\s*/, '').trim()
+  if (/^(?:execute|conduct|visit|record|support|ensure|use|work|assist|supervise|lead|implement|physically confirm|track|monitor|facilitate|carry out|provide|serve as|manage|coordinate|handle|perform|follow up)\b/i.test(statement)) {
+    return false
+  }
+  return /\b(?:must|required|minimum|at least|proven|prior|OND|HND|BSc|BA|BEng|BTech|NCE|SSCE|WAEC|bachelor|master|degree|diploma|certificate|certification|added advantage|desirable|knowledge|skills?|fluent|fluency|proficient|proficiency|willingness|ability|eligible|applicants? should|candidates? should|experience|qualification|strong command)\b/i.test(statement)
 }
 
 function requirementsFromPosting(jobPosting, description) {
   const requirements = []
   const add = (label, value) => {
     const detail = structuredValue(value)
-    if (detail && !requirements.some((item) => item.label === label && item.detail.toLowerCase() === detail.toLowerCase())) {
+    const structuredMatch =
+      (label === 'Degree level' && /^(?:undergraduate|masters?|phd|any)$/i.test(detail)) ||
+      (label === 'Experience' && /^\d+(?:\.\d+)?\s+(?:years?|months?)$/i.test(detail)) ||
+      (label === 'Eligible location' && /^(?:nigeria|ghana|kenya|south africa|africa|pan-african|worldwide|international)$/i.test(detail)) ||
+      (label === 'Field of study' && /\b(?:engineering|business|technology|finance|healthcare|science|education|arts|social sciences)\b/i.test(detail))
+    if (
+      detail &&
+      (isRequirementStatement(detail) || structuredMatch) &&
+      !requirements.some((item) => item.label === label && item.detail.toLowerCase() === detail.toLowerCase())
+    ) {
       requirements.push({ label, detail })
     }
   }
@@ -230,10 +262,29 @@ function requirementsFromPosting(jobPosting, description) {
     const section = html.slice(requirementHeading.index + requirementHeading[0].length).split(/<h[1-6]\b/i)[0]
     for (const match of section.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) {
       const detail = opportunityDescription(match[1]).replace(/^-\s*/, '').trim()
-      if (detail) add(labelRequirement(detail), detail)
+      if (isRequirementStatement(detail)) add(labelRequirement(detail), detail)
     }
   }
   return requirements
+}
+
+function sectionBulletPoints(html, label) {
+  let decoded = String(html ?? '')
+  for (let index = 0; index < 3; index += 1) decoded = decodeHtml(decoded)
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const heading = new RegExp(
+    `<p\\b[^>]*>\\s*(?:<strong\\b[^>]*>)?\\s*${escapedLabel}\\s*:?\\s*(?:<\\/strong>)?\\s*<\\/p>`,
+    'i',
+  ).exec(decoded)
+  if (!heading) return []
+
+  const remainder = decoded.slice(heading.index + heading[0].length)
+  const nextSection = /<p\b[^>]*>\s*<strong\b[^>]*>[^<]+:\s*<\/strong>|<h[1-6]\b/i.exec(remainder)
+  const section = nextSection ? remainder.slice(0, nextSection.index) : remainder
+  return [...section.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>|<li\b[^>]*>([\s\S]*?)<\/li>/gi)]
+    .filter((match) => match[2] || /(?:•|&bull;|&#8226;|&middot;)/i.test(match[1]))
+    .map((match) => opportunityDescription(match[1] ?? match[2]).replace(/^[•·\-]\s*/, '').trim())
+    .filter((value) => value && isRequirementStatement(value))
 }
 
 function isProcurementNotice(title, description) {
@@ -425,7 +476,7 @@ async function extractMyJobMagListings(indexHtml, sourceUrl) {
   return records
 }
 
-async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
+export async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
   const cards = [...indexHtml.matchAll(/<h2[^>]*>\s*<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>([\s\S]*?)(?=<h2\b|$)/gi)]
   const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
   const records = []
@@ -449,18 +500,26 @@ async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
       }
       const scholarshipPosting = jsonLdValues(detailHtml).find((item) => item?.['@type'] !== 'JobPosting' && item?.name) ?? null
       const detailDescription = opportunityDescription(scholarshipPosting?.description ?? '')
-      const eligibility = firstString(
+      const detailEligibility = sectionBulletPoints(detailHtml, 'Eligibility')
+      const structuredEligibility = firstString(
         structuredValue(scholarshipPosting?.eligibilityRequirements),
         structuredValue(scholarshipPosting?.eligibility),
         text.match(/Eligibility:\s*([^\r\n]+)/i)?.[1]
       )
+      const eligibility = structuredEligibility || detailEligibility.join('\n')
       const requirements = requirementsFromPosting({
         educationRequirements: scholarshipPosting?.educationRequirements ?? degreeLevel,
         educationalRequirements: scholarshipPosting?.educationalRequirements ?? (text.match(/(?:Field|Study area):\s*([^\r\n]+)/i)?.[1] ?? ''),
         experienceRequirements: scholarshipPosting?.experienceRequirements,
         applicantLocationRequirements: scholarshipPosting?.applicantLocationRequirements,
-        eligibility: eligibility || scholarshipPosting?.description,
+        eligibility: structuredEligibility,
       }, scholarshipPosting?.description ?? '')
+      for (const detail of detailEligibility) {
+        const label = labelRequirement(detail)
+        if (!requirements.some((item) => item.label === label && item.detail.toLowerCase() === detail.toLowerCase())) {
+          requirements.push({ label, detail })
+        }
+      }
       if (studyIn && studyIn !== text) requirements.push({ label: 'Study location', detail: cleanText(studyIn) })
       const applyUrl = detailHtml ? preferredApplyUrl(detailHtml, detailUrl, detailUrl) : detailUrl
       const completeEligibility = eligibility || requirements.filter((item) => item.label === 'Eligibility' || item.label === 'Requirement').map((item) => item.detail).join('\n')
@@ -478,6 +537,78 @@ async function extractScholars4DevScholarships(indexHtml, sourceUrl) {
       })
     } catch (error) {
       console.warn(`[scraper] skipped Scholars4Dev detail ${match[1]}: ${error.message}`)
+    }
+  }
+  return records
+}
+
+export function extractAfterSchoolAfricaScholarship(post) {
+  const categories = Array.isArray(post.categories) ? post.categories : []
+  if (!categories.some((category) => AFTERSCHOOLAFRICA_CATEGORY_IDS.includes(category))) return null
+
+  const content = String(post.content?.rendered ?? '')
+  const title = cleanText(decodeHtml(post.title?.rendered ?? ''))
+  const fullText = htmlText(content || post.excerpt?.rendered || '')
+  const description = opportunityDescription(content || post.excerpt?.rendered || '')
+  const text = `${title}\n${fullText}`
+  const labeledFunder = content.match(
+    /<(?:strong|b)\b[^>]*>\s*(?:Award Provider|Scholarship Provider|Provider|Funder)\s*:\s*<\/(?:strong|b)>\s*([^<]+)/i,
+  )?.[1]
+  const offeredBy = content.match(/\b(?:offered|provided|funded) by\s+(?:<(?:strong|b)\b[^>]*>)?([^<]+)/i)?.[1]
+  const funder = cleanText(decodeHtml(labeledFunder ?? '')) ||
+    cleanText(decodeHtml(offeredBy ?? '')) ||
+    (text.match(/(?:Award Provider|Scholarship Provider|Provider|Funder):\s*([^\n]+)/i)?.[1]?.trim() ?? '')
+  const detailUrl = absoluteUrl(post.link ?? '', 'https://www.afterschoolafrica.com/')
+  if (!title || !funder || !detailUrl) return null
+
+  const eligibilitySection = content.match(
+    /<h[1-6]\b[^>]*>[^<]*(?:eligibility|who can apply|requirements)[^<]*<\/h[1-6]>([\s\S]*?)(?=<h[1-6]\b|$)/i,
+  )?.[1] ?? ''
+  const eligibility = [...eligibilitySection.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)]
+    .map(([, item]) => opportunityDescription(item).replace(/^-\s*/, '').trim())
+    .filter(Boolean)
+  const requirements = requirementsFromPosting({}, content)
+  const studyLocation = content.match(
+    /(?:To be taken at \(country\)|Study location|Study in|Program location):\s*(?:<\/strong>)?\s*([^<\r\n]+)/i,
+  )?.[1]?.trim()
+  if (studyLocation) requirements.push({ label: 'Study location', detail: studyLocation })
+
+  return {
+    name: title,
+    funder,
+    country: inferCountry(studyLocation || text),
+    field: SCHOLARSHIP_FIELDS.find((field) => field !== 'Any' && text.toLowerCase().includes(field.toLowerCase())) ?? 'Any',
+    degree_level: inferDegree(text),
+    deadline: dateAfterLabel(text, 'Application deadline') ?? dateAfterLabel(text, 'Deadline'),
+    eligibility: eligibility.join('\n') || null,
+    apply_url: preferredApplyUrl(content, detailUrl, detailUrl),
+    description: description.slice(0, 4000),
+    requirements,
+    source_url: detailUrl,
+  }
+}
+
+async function extractAfterSchoolAfricaScholarships(indexJson, sourceUrl) {
+  let posts
+  try {
+    posts = JSON.parse(indexJson)
+  } catch (error) {
+    throw new Error(`AfterSchoolAfrica returned invalid WordPress API JSON: ${error.message}`)
+  }
+  if (!Array.isArray(posts)) throw new Error('AfterSchoolAfrica WordPress API response was not a post list.')
+
+  const limit = Number(process.env.SCRAPER_DETAIL_LIMIT ?? 25)
+  const baseUrl = new URL(sourceUrl)
+  const records = []
+  for (const post of posts.slice(0, limit)) {
+    if (!Number.isInteger(post.id) || !post.categories?.some((category) => AFTERSCHOOLAFRICA_CATEGORY_IDS.includes(category))) continue
+    try {
+      const detailUrl = new URL(`/wp-json/wp/v2/posts/${post.id}?_fields=id,link,title,content,excerpt,categories`, baseUrl.origin).toString()
+      const detail = JSON.parse(await fetchPage(detailUrl))
+      const record = extractAfterSchoolAfricaScholarship(detail)
+      if (record) records.push(record)
+    } catch (error) {
+      console.warn(`[scraper] skipped AfterSchoolAfrica detail ${post.link ?? post.id}: ${error.message}`)
     }
   }
   return records
@@ -588,12 +719,15 @@ export async function scrapeSource({ sourceUrl, kind, sourceName, dryRun = false
   const isMyJobMag = hostname.endsWith('myjobmag.com') && kind === 'listing'
   const isScholars4Dev = hostname.endsWith('scholars4dev.com') && kind === 'scholarship'
   const isOpportunityDesk = hostname.endsWith('opportunitydesk.org') && kind === 'listing'
+  const isAfterSchoolAfrica = hostname.endsWith('afterschoolafrica.com') && kind === 'scholarship'
   const extracted = isMyJobMag
     ? await extractMyJobMagListings(html, sourceUrl)
     : isScholars4Dev
       ? await extractScholars4DevScholarships(html, sourceUrl)
       : isOpportunityDesk
         ? await extractOpportunityDeskListings(html, sourceUrl)
+        : isAfterSchoolAfrica
+          ? await extractAfterSchoolAfricaScholarships(html, sourceUrl)
     : kind === 'listing'
       ? extractListingObjects(html, sourceUrl)
       : extractScholarshipObjects(html, sourceUrl)

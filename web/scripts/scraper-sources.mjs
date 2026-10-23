@@ -40,6 +40,14 @@ export const SCRAPER_SOURCES = [
     notes: 'Internships category RSS feed. Imports Africa-tagged posts only; review direct application links before publishing.',
   },
   {
+    id: 'afterschoolafrica-scholarships',
+    name: 'AfterSchoolAfrica',
+    kind: 'scholarship',
+    url: 'https://www.afterschoolafrica.com/wp-json/wp/v2/posts?categories=110%2C98&per_page=25&_fields=id,link,title,excerpt,categories',
+    enabled: true,
+    notes: 'WordPress API categories for Scholarships for Africans and Scholarships for Nigerians; records remain pending review.',
+  },
+  {
     id: 'mastercard-foundation-scholars',
     name: 'Mastercard Foundation Scholars Program',
     kind: 'scholarship',
