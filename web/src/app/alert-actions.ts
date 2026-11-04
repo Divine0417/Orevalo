@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, getCurrentUser } from '@/lib/supabase/server'
 
-const FIELDS = new Set(['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare'])
-const LOCATIONS = new Set(['Lagos', 'Abuja', 'Remote', 'Other'])
+const FIELDS = new Set(['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare', 'Other'])
+const LOCATIONS = new Set(['Lagos', 'Abuja', 'Remote', 'Pan-African', 'Other'])
 const DEGREE_LEVELS = new Set(['Undergraduate', 'Masters', 'PhD'])
 const FREQUENCIES = new Set(['off', 'daily', 'weekly'])
 type Frequency = 'off' | 'daily' | 'weekly'

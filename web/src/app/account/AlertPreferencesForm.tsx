@@ -3,8 +3,8 @@
 import { useActionState } from 'react'
 import { saveAlertPreferences, type AlertResult } from '../alert-actions'
 
-const FIELDS = ['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare']
-const LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Other']
+const FIELDS = ['Engineering', 'Business', 'Technology', 'Finance', 'Healthcare', 'Other']
+const LOCATIONS = ['Lagos', 'Abuja', 'Remote', 'Pan-African', 'Other']
 const DEGREE_LEVELS = ['Undergraduate', 'Masters', 'PhD']
 
 const checkbox = 'size-4 accent-clay'

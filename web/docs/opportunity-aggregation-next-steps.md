@@ -26,7 +26,7 @@ This work extends the existing system:
 | Pending storage | Done | `status`, `rejection_reason`, and legacy `published` values are migrated by `0012_review_status.sql`. |
 | Pending filter | Done | Internship and scholarship admin pages have explicit Pending, Rejected, Archived, and Live views. |
 | Approve action | Done | Approve publishes and unarchives; Reject records a reason; archived rows have a separate Unarchive action that returns them to Pending. |
-| Automatic source ingestion | In progress | `scripts/scrape-all.mjs` runs the enabled source registry sequentially with a delay, and `/api/cron/scrape` is scheduled daily on Vercel. MyJobMag has a bounded detail-page adapter; cron defaults to dry-run. Persistent logs, link checks, notifications, and the Scholars4Dev detail adapter remain. |
+| Automatic source ingestion | In progress | `scripts/scrape-all.mjs` runs the enabled source registry sequentially with a delay, and `/api/cron/scrape` is scheduled daily on Vercel. MyJobMag and Scholars4Dev have bounded detail-page adapters; Opportunity Desk uses its Internships RSS feed and imports Africa-tagged posts only. Cron defaults to dry-run. Persistent logs and link checks remain. |
 | Link and content verification | Missing | Import validates URL shape only. There is no automated HTTP check, scam-keyword scan, or near-duplicate check. |
 | Source attribution | Partial | `source_name` and `source_url` columns exist and are shown on detail pages, but automated source records do not exist. |
 | Admin pending notification | Missing | The current alert cron emails students about published opportunities and deadlines; it does not notify the team about pending records. |
@@ -112,7 +112,7 @@ Initial source candidates:
 - Scholars4Dev
 - Dangote Group, MTN Nigeria, Flutterwave, PwC Nigeria, Access Bank, GTBank, and Zenith career pages
 
-The first source should be selected after a quick audit for stable, permitted, structured content. Prefer a source with static HTML or a documented feed. Use a browser automation tool only when necessary for a JavaScript-rendered page.
+The first source should be selected after a quick audit for stable, permitted, structured content. Prefer a source with static HTML or a documented feed. Use a browser automation tool only when necessary for a JavaScript-rendered page. Pan-African listing eligibility is represented as `Pan-African` in the location filter and alert preferences.
 
 ### 4. Build one end-to-end ingestion job
 
@@ -124,9 +124,9 @@ Example audit run:
 npm run scrape -- --url https://example.com/opportunities --kind listing --source-name "Example source" --dry-run
 ```
 
-**Still required:** Choose and audit a real source, add selectors/adapter logic where generic extraction is insufficient, add persistent run logs, link checks, notifications, and scheduling. Do not run a write without `SUPABASE_SERVICE_ROLE_KEY` configured.
+**Still required:** Add persistent run logs and automated link checks. Do not run a write without `SUPABASE_SERVICE_ROLE_KEY` configured.
 
-The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria and Scholars4Dev remain enabled for scheduled scraping. MyJobMag detail extraction and the Scholars4Dev index-card adapter are implemented and verified; the first live Scholars4Dev write inserted 9 Pending scholarships. The remaining documented sources are registered but disabled until their URLs, terms, and extraction fields are audited: NGCareers, Jobberman, Opportunity Desk, Mastercard Foundation, Tony Elumelu Foundation, UNILAG, University of Ibadan, Covenant University, Dangote, MTN Nigeria, Flutterwave, PwC Nigeria, Access Bank, GTBank, and Zenith Bank.
+The current registry is in `scripts/scraper-sources.mjs`. MyJobMag Nigeria, Scholars4Dev, and the Opportunity Desk Internships feed are enabled. MyJobMag detail extraction and the Scholars4Dev detail-page adapter prefer external application links when present, while retaining the source page for postings that use the source's own application form. Opportunity Desk imports only posts in its Internships feed tagged for Africa, extracts their deadlines and direct application links from each detail page, and stores African eligibility for admin review. Opportunity Desk scholarships remain out of scope until a scholarship-specific category/feed can be separated from its general mixed-opportunity feed. The remaining documented sources are registered but disabled until their URLs, terms, and extraction fields are audited: NGCareers, Jobberman, Mastercard Foundation, Tony Elumelu Foundation, UNILAG, University of Ibadan, Covenant University, Dangote, MTN Nigeria, Flutterwave, PwC Nigeria, Access Bank, GTBank, and Zenith Bank.
 
 The automatic route is `/api/cron/scrape`, configured in `vercel.json` for `08:30 UTC` daily. Vercel must have `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, and `SCRAPER_ADMIN_EMAIL` configured. When new rows are inserted, the route emails `SCRAPER_ADMIN_EMAIL` with the source counts and pending review link. It does not email on dry runs or duplicate-only runs. The route writes new records as Pending by default; set `SCRAPER_CRON_DRY_RUN=true` to audit without inserts. The route never publishes records and reports `inserted` and `notified` in its response.
 
