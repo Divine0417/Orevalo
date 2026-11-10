@@ -38,14 +38,24 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
   })
 
   if (error) {
-    // Supabase returns the same shape whether or not the address exists, which
-    // is what we want — surfacing "already registered" enumerates accounts.
+    const accountAlreadyExists =
+      error.code === 'user_already_exists' || error.code === 'email_exists'
+
+    if (!accountAlreadyExists) {
+      console.error('[auth] Sign-up failed:', {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+      })
+    }
+
     return {
       ok: false,
-      message:
-        error.message.toLowerCase().includes('password')
+      message: accountAlreadyExists
+        ? 'We could not create that account. Try signing in instead.'
+        : error.message.toLowerCase().includes('password')
           ? error.message
-          : 'We could not create that account. Try signing in instead.',
+          : 'We could not create your account right now. Please try again later.',
     }
   }
 
@@ -66,9 +76,17 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  // Deliberately vague: distinguishing "no such user" from "wrong password"
-  // tells an attacker which addresses are registered.
-  if (error) return { ok: false, message: 'Those credentials were not accepted.' }
+  if (error) {
+    // Keep the response vague so it does not reveal whether an address exists.
+    if (error.code !== 'invalid_credentials') {
+      console.error('[auth] Sign-in failed:', {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+      })
+    }
+    return { ok: false, message: 'Those credentials were not accepted.' }
+  }
 
   if (!data.user.email_confirmed_at) {
     await supabase.auth.signOut()
