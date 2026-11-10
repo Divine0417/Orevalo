@@ -26,25 +26,36 @@ export async function signUp(_prev: AuthResult | null, formData: FormData): Prom
   }
 
   const supabase = await createClient()
+  const baseUrl = await siteUrl()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       // Read by the handle_new_user trigger from 0001 to populate the profile.
       data: { full_name: fullName },
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=%2Faccount&welcome=1`,
+      emailRedirectTo: `${baseUrl}/auth/callback?next=%2Faccount&welcome=1`,
     },
   })
 
   if (error) {
-    // Supabase returns the same shape whether or not the address exists, which
-    // is what we want — surfacing "already registered" enumerates accounts.
+    const accountAlreadyExists =
+      error.code === 'user_already_exists' || error.code === 'email_exists'
+
+    if (!accountAlreadyExists) {
+      console.error('[auth] Sign-up failed:', {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+      })
+    }
+
     return {
       ok: false,
-      message:
-        error.message.toLowerCase().includes('password')
+      message: accountAlreadyExists
+        ? 'We could not create that account. Try signing in instead.'
+        : error.message.toLowerCase().includes('password')
           ? error.message
-          : 'We could not create that account. Try signing in instead.',
+          : 'We could not create your account right now. Please try again later.',
     }
   }
 
@@ -65,9 +76,17 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  // Deliberately vague: distinguishing "no such user" from "wrong password"
-  // tells an attacker which addresses are registered.
-  if (error) return { ok: false, message: 'Those credentials were not accepted.' }
+  if (error) {
+    // Keep the response vague so it does not reveal whether an address exists.
+    if (error.code !== 'invalid_credentials') {
+      console.error('[auth] Sign-in failed:', {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+      })
+    }
+    return { ok: false, message: 'Those credentials were not accepted.' }
+  }
 
   if (!data.user.email_confirmed_at) {
     await supabase.auth.signOut()
@@ -80,11 +99,12 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
 
 export async function signInWithGoogle(formData: FormData) {
   const next = safeNext(String(formData.get('next') ?? '/account'))
+  const baseUrl = await siteUrl()
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   })
 
@@ -106,9 +126,10 @@ export async function requestPasswordReset(
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email) return { ok: false, message: 'Enter your email address.' }
 
+  const baseUrl = await siteUrl()
   const supabase = await createClient()
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl()}${PASSWORD_RESET_PATH}`,
+    redirectTo: `${baseUrl}${PASSWORD_RESET_PATH}`,
   })
 
   // Always report success: whether an address is registered is not public.
